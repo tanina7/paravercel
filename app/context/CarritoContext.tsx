@@ -1,0 +1,90 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface TramiteCarrito {
+  id: number;
+  name: string;
+  descripcion: string;
+  costo: number;
+  requisitos: string;
+}
+
+interface CarritoContextType {
+  items: TramiteCarrito[];
+  agregarTramite: (tramite: TramiteCarrito) => void;
+  eliminarTramite: (id: number) => void;
+  vaciarCarrito: () => void;
+  obtenerTotal: () => number;
+}
+
+const CarritoContext = createContext<CarritoContextType | undefined>(undefined);
+
+export function CarritoProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<TramiteCarrito[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Cargar del localStorage al montar
+  useEffect(() => {
+    const carritoGuardado = localStorage.getItem('carrito-tramites');
+    if (carritoGuardado) {
+      try {
+        setItems(JSON.parse(carritoGuardado));
+      } catch (error) {
+        console.error('Error al cargar carrito:', error);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Guardar a localStorage cuando cambia items
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('carrito-tramites', JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
+
+  const agregarTramite = (tramite: TramiteCarrito) => {
+    setItems((prevItems) => {
+      const existe = prevItems.find((item) => item.id === tramite.id);
+      if (existe) {
+        return prevItems;
+      }
+      // Asegurar que costo es un número
+      const tramiteConCostoNumerico = {
+        ...tramite,
+        costo: typeof tramite.costo === 'string' ? parseFloat(tramite.costo) : Number(tramite.costo),
+      };
+      return [...prevItems, tramiteConCostoNumerico];
+    });
+  };
+
+  const eliminarTramite = (id: number) => {
+    setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  };
+
+  const vaciarCarrito = () => {
+    setItems([]);
+  };
+
+  const obtenerTotal = () => {
+    return items.reduce((total, item) => {
+      const costo = typeof item.costo === 'string' ? parseFloat(item.costo) : Number(item.costo);
+      return total + (isNaN(costo) ? 0 : costo);
+    }, 0);
+  };
+
+  return (
+    <CarritoContext.Provider value={{ items, agregarTramite, eliminarTramite, vaciarCarrito, obtenerTotal }}>
+      {children}
+    </CarritoContext.Provider>
+  );
+}
+
+export function useCarrito() {
+  const context = useContext(CarritoContext);
+  if (context === undefined) {
+    throw new Error('useCarrito debe usarse dentro de CarritoProvider');
+  }
+  return context;
+}

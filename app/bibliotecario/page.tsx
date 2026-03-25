@@ -1,3 +1,6 @@
-export default function Bibliotecario() {
-  return <h1>Panel Bibliotecario</h1>;
+'use client'
+import TableSolicitudes from './components/TableSolicitudes';
+
+export default function Page() {
+  return <TableSolicitudes />;
 }

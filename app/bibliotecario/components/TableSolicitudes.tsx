@@ -9,32 +9,46 @@ export default function TableSolicitudes() {
   const [action, setAction] = useState('');
   const { user } = useAuth();
 
+  // 🔥 DATOS DE PRUEBA
   const fetchData = async () => {
-    const res = await fetch('/api/biblioteca/solicitudes');
-    const json = await res.json();
-    setData(json);
+    const fakeData = [
+      {
+        id_tramite: 1,
+        nombre_completo: 'Juan Pérez',
+        correo: 'juan@gmail.com'
+      },
+      {
+        id_tramite: 2,
+        nombre_completo: 'María López',
+        correo: 'maria@gmail.com'
+      },
+      {
+        id_tramite: 3,
+        nombre_completo: 'Carlos Ruiz',
+        correo: 'carlos@gmail.com'
+      }
+    ];
+
+    setData(fakeData);
   };
 
   useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (observacion: string) => {
-    await fetch('/api/biblioteca/procesar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_tramite: selected.id_tramite,
-        estado: action === 'aprobar' ? 'Finalizado' : 'Rechazado',
-        comentario: observacion,
-        id_usuario: user.id_usuario
-      })
+    console.log('Simulando envío:', {
+      id_tramite: selected.id_tramite,
+      estado: action === 'aprobar' ? 'Finalizado' : 'Rechazado',
+      comentario: observacion,
+      id_usuario: user?.id_usuario || 1
     });
+
+    // 🔥 Simulación sin backend
     setSelected(null);
-    fetchData();
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Solicitudes</h1>
+      <h1 className="text-2xl font-bold mb-4">Solicitudes (Modo Prueba 🚀)</h1>
       <table className="w-full bg-white shadow rounded">
         <thead className="bg-red-900 text-white">
           <tr>
@@ -51,10 +65,16 @@ export default function TableSolicitudes() {
               <td className="p-2">{item.nombre_completo}</td>
               <td className="p-2">{item.correo}</td>
               <td className="p-2 space-x-2">
-                <button onClick={() => { setSelected(item); setAction('aprobar'); }} className="bg-green-600 text-white px-3 py-1 rounded">
+                <button
+                  onClick={() => { setSelected(item); setAction('aprobar'); }}
+                  className="bg-green-600 text-white px-3 py-1 rounded"
+                >
                   Aprobar
                 </button>
-                <button onClick={() => { setSelected(item); setAction('rechazar'); }} className="bg-red-600 text-white px-3 py-1 rounded">
+                <button
+                  onClick={() => { setSelected(item); setAction('rechazar'); }}
+                  className="bg-red-600 text-white px-3 py-1 rounded"
+                >
                   Rechazar
                 </button>
               </td>

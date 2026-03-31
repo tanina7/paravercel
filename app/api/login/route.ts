@@ -5,9 +5,13 @@ export async function POST(request: Request) {
     try {
         const { correo, contrasena } = await request.json();
 
-        // IMPORTANTE: Si usas la URL completa en el .env, el pool ya sabe a dónde ir
+        // CORRECCIÓN 1: Usamos JOIN para traer el nombre del rol desde la tabla 'roles'
+        // CORRECCIÓN 2: Usamos 'password_hash' que es el nombre real en tu SQL
         const [rows]: any = await pool.query(
-            'SELECT * FROM usuarios WHERE correo = ? AND contrasena = ?',
+            `SELECT u.nombre_completo, r.nombre_rol 
+             FROM usuarios u
+             JOIN roles r ON u.id_rol = r.id_rol
+             WHERE u.correo = ? AND u.password_hash = ?`,
             [correo, contrasena]
         );
 
@@ -16,14 +20,18 @@ export async function POST(request: Request) {
         }
 
         const usuario = rows[0];
+
+        // Enviamos los datos tal cual los espera tu Frontend
         return NextResponse.json({
-            rol: usuario.rol,
-            nombre: usuario.nombre
+            rol: usuario.nombre_rol, // Ejemplo: "Estudiante", "Caja"
+            nombre: usuario.nombre_completo
         });
 
     } catch (error: any) {
-        // Esto imprimirá el error real en tu terminal de VS Code
         console.error("Error de base de datos:", error.message);
-        return NextResponse.json({ message: "Error de conexión con Aiven" }, { status: 500 });
+        return NextResponse.json({ 
+            message: "Error de conexión", 
+            details: error.message 
+        }, { status: 500 });
     }
 }

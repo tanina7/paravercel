@@ -2,8 +2,9 @@ import pool from "@/lib/db";
 
 export async function GET() {
   try {
-    const [rows] = await pool.query(`
+    const [rows]: any = await pool.query(`
       SELECT 
+        h.id_historial, 
         t.id_tramite,
         u.nombre_completo,
         e.nombre_estado,
@@ -15,7 +16,6 @@ export async function GET() {
       JOIN solicitudes_tramite s ON t.id_solicitud = s.id_solicitud
       JOIN estudiantes es ON s.id_estudiante = es.id_estudiante
       JOIN usuarios u ON es.id_usuario = u.id_usuario
-      WHERE e.nombre_estado IN ('Finalizado', 'Rechazado')
       ORDER BY h.fecha DESC
     `);
 

@@ -24,14 +24,30 @@ export default function Home() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        // Redirección según el rol de la base de datos
-        if (data.rol === "estudiante") router.push("/landing");
-        else if (data.rol === "biblioteca") router.push("/bibliotecario");
-        else if (data.rol === "operador") router.push("/tramites");
-        else if (data.rol === "caja") router.push("/carrito");
-        else router.push("/landing");
-      } else {
+     if (res.ok) {
+  // 1. Convertimos el rol que viene de la API a minúsculas para comparar sin errores
+  const rolRecibido = data.rol.toLowerCase();
+
+  console.log("Rol detectado:", rolRecibido); // Esto te ayudará a ver qué llega en la consola
+
+  if (rolRecibido === "estudiante") {
+    router.push("/landing");
+  } 
+  else if (rolRecibido === "biblioteca") {
+    router.push("/bibliotecario");
+  } 
+  else if (rolRecibido === "director carrera" || rolRecibido === "operador") {
+    router.push("/tramites");
+  } 
+  else if (rolRecibido === "caja") {
+    router.push("/carrito");
+  } 
+  else {
+    // Si no coincide exactamente, mandamos a una ruta segura
+    router.push("/landing");
+  }
+}
+else {
         setError(data.message || "Credenciales incorrectas");
       }
     } catch (err) {

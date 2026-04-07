@@ -3,19 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface TramiteQuickAccess {
   id: string;
   nombre: string;
   descripcion: string;
   icono: string;
-}
-
-interface ConsultaResult {
-  codigo: string;
-  nombre_tramite: string;
-  estado: string;
-  fecha: string;
 }
 
 const tramitesQuickAccess: TramiteQuickAccess[] = [
@@ -57,38 +51,22 @@ const estadoConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function LandingPage() {
+  const router = useRouter();
   const [codigoTramite, setCodigoTramite] = useState('');
-  const [consultaResult, setConsultaResult] = useState<ConsultaResult | null>(null);
-  const [mostrarResultado, setMostrarResultado] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Consulta
   const handleConsultar = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!codigoTramite.trim()) return;
-
-    try {
-      const res = await fetch(`/api/tramites/${codigoTramite}`);
-      const data = await res.json();
-
-      if (data.error) {
-        alert("Trámite no encontrado");
-        return;
-      }
-
-      setConsultaResult({
-        codigo: data.codigo,
-        nombre_tramite: data.nombre,
-        estado: data.estado,
-        fecha: new Date(data.fecha).toLocaleDateString(),
-      });
-
-      setMostrarResultado(true);
-      setCodigoTramite('');
-    } catch (error) {
-      console.error(error);
+    if (!codigoTramite.trim()) {
+      alert('Por favor ingresa un código de trámite');
+      return;
     }
+
+    // Redireccionar a la página de consulta con el código como parámetro
+    router.push(`/usuario/consulta-tramite?codigo=${encodeURIComponent(codigoTramite)}`);
+    setCodigoTramite('');
   };
 
   // Carruseel navigation
@@ -120,9 +98,7 @@ export default function LandingPage() {
             <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
           </div>
 
-          <button className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95">
-            Iniciar Sesión
-          </button>
+          
         </nav>
       </header>
 
@@ -144,7 +120,7 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Link href="/SeleccionTramites" className="px-8 py-3.5 rounded-lg font-semibold bg-white text-[#8B1A1A] hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
+                <Link href="/usuario/SeleccionTramites" className="px-8 py-3.5 rounded-lg font-semibold bg-white text-[#8B1A1A] hover:shadow-xl hover:scale-105 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
                   <span>Ver trámites</span>
                   <span className="text-xl">→</span>
                 </Link>
@@ -200,40 +176,6 @@ export default function LandingPage() {
                 Consultar Estado
               </button>
             </form>
-
-            {mostrarResultado && consultaResult && (
-              <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-[#8B1A1A] animate-slideInDown">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Código de Trámite:</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {consultaResult.codigo}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Tipo de Trámite:</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {consultaResult.nombre_tramite}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Estado:</p>
-                    <span
-                      className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border-2 ${estadoConfig[consultaResult.estado]?.color || 'bg-gray-100 text-gray-800'
-                        }`}
-                    >
-                      {estadoConfig[consultaResult.estado].label}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Fecha de Consulta:</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {consultaResult.fecha}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useCarrito } from '@/app/context/CarritoContext';
+import { useCarrito } from '@/app/usuario/context/CarritoContext';
 
 interface Tramite {
   id: number;
@@ -59,9 +59,7 @@ export default function SeleccionTramites() {
             <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
           </Link>
 
-          <button className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95">
-            Iniciar Sesión
-          </button>
+          
         </nav>
       </header>
 
@@ -213,7 +211,7 @@ export default function SeleccionTramites() {
       {/* Botón Flotante de Carrito */}
       {items.length > 0 && (
         <div className="fixed bottom-6 right-6 z-40">
-          <Link href="/carrito" className="flex items-center gap-3 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95 font-semibold">
+          <Link href="/usuario/carrito" className="flex items-center gap-3 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95 font-semibold">
             <svg
               className="w-6 h-6"
               fill="currentColor"

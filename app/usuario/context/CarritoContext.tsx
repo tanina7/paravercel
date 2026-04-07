@@ -10,18 +10,29 @@ interface TramiteCarrito {
   requisitos: string;
 }
 
+interface SolicitudData {
+  nombreCompleto: string;
+  carrera: string;
+  subSede: string;
+  documentos: Record<number, File[]>; // id_tipo -> archivos
+}
+
 interface CarritoContextType {
   items: TramiteCarrito[];
+  solicitud: SolicitudData | null;
   agregarTramite: (tramite: TramiteCarrito) => void;
   eliminarTramite: (id: number) => void;
   vaciarCarrito: () => void;
   obtenerTotal: () => number;
+  setSolicitud: (solicitud: SolicitudData) => void;
+  clearSolicitud: () => void;
 }
 
 const CarritoContext = createContext<CarritoContextType | undefined>(undefined);
 
 export function CarritoProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<TramiteCarrito[]>([]);
+  const [solicitud, setSolicitudState] = useState<SolicitudData | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Cargar del localStorage al montar
@@ -74,8 +85,16 @@ export function CarritoProvider({ children }: { children: ReactNode }) {
     }, 0);
   };
 
+  const setSolicitud = (data: SolicitudData) => {
+    setSolicitudState(data);
+  };
+
+  const clearSolicitud = () => {
+    setSolicitudState(null);
+  };
+
   return (
-    <CarritoContext.Provider value={{ items, agregarTramite, eliminarTramite, vaciarCarrito, obtenerTotal }}>
+    <CarritoContext.Provider value={{ items, solicitud, agregarTramite, eliminarTramite, vaciarCarrito, obtenerTotal, setSolicitud, clearSolicitud }}>
       {children}
     </CarritoContext.Provider>
   );

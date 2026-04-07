@@ -31,7 +31,7 @@ export default function Home() {
   console.log("Rol detectado:", rolRecibido); // Esto te ayudará a ver qué llega en la consola
 
   if (rolRecibido === "estudiante") {
-    router.push("/landing");
+    router.push("/usuario/landing");
   } 
   else if (rolRecibido === "biblioteca") {
     router.push("/bibliotecario");

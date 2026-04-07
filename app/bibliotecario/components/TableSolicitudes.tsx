@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../usuario/context/AuthContext';
 
 export default function TableSolicitudes() {
   const [data, setData] = useState<any[]>([]);

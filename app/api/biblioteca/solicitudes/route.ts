@@ -3,12 +3,11 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // Esta consulta une las tablas para sacar el Nombre y Correo que pide tu tabla
     const [rows]: any = await pool.query(`
       SELECT 
         t.id_tramite,
-        u.nombre_completo,
-        u.correo,
+        COALESCE(u.nombre_completo, 'Sin nombre') AS nombre_completo,
+        COALESCE(u.correo, 'Sin correo') AS correo,
         e.nombre_estado
       FROM tramites t
       JOIN solicitudes_tramite s ON t.id_solicitud = s.id_solicitud
@@ -21,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json(rows);
   } catch (error: any) {
-    console.error("Error en API Biblioteca:", error);
+    console.error("Error en API Solicitudes:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

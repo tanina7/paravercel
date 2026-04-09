@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCarrito } from '@/app/context/CarritoContext';
+import { useRouter } from 'next/navigation';
+import { useCarrito } from '@/app/usuario/context/CarritoContext';
 
 export default function CarritoPage() {
+  const router = useRouter();
   const { items, eliminarTramite, obtenerTotal, vaciarCarrito } = useCarrito();
 
   const total = typeof obtenerTotal() === 'number' ? obtenerTotal() : 0;
@@ -14,14 +16,8 @@ export default function CarritoPage() {
       return;
     }
 
-    const tramitesConfirmados = items.map((t) => `• ${t.name} (${t.costo} Bs)`).join('\n');
-
-    alert(
-      `✓ Trámites Confirmados:\n\n${tramitesConfirmados}\n\nTotal: ${total.toFixed(2)} Bs\n\nProceso de pago próximamente...`
-    );
-
-    // Opcional: limpiar carrito después de confirmar
-    // vaciarCarrito();
+    // Navegar a formulario
+    router.push('/usuario/formulario');
   };
 
   return (
@@ -36,9 +32,7 @@ export default function CarritoPage() {
             <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
           </Link>
 
-          <button className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95">
-            Iniciar Sesión
-          </button>
+          
         </nav>
       </header>
 
@@ -90,7 +84,7 @@ export default function CarritoPage() {
                 No has seleccionado ningún trámite todavía. ¡Comienza a agregar trámites a tu carrito!
               </p>
               <Link
-                href="/SeleccionTramites"
+                href="/usuario/SeleccionTramites"
                 className="inline-block px-8 py-3 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95"
               >
                 Ver Trámites Disponibles
@@ -158,7 +152,7 @@ export default function CarritoPage() {
 
                 {/* Botón volver */}
                 <Link
-                  href="/SeleccionTramites"
+                  href="/usuario/SeleccionTramites"
                   className="inline-block mt-6 px-6 py-2 border-2 border-[#8B1A1A] text-[#8B1A1A] rounded-lg font-semibold hover:bg-[#8B1A1A] hover:text-white transition-all duration-300"
                 >
                   ← Continuar Seleccionando
@@ -214,7 +208,7 @@ export default function CarritoPage() {
                       onClick={handleConfirmar}
                       className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-bold transition-all duration-300 hover:shadow-lg active:scale-95 text-center"
                     >
-                      ✓ Confirmar Solicitud
+                      ✓ Continuar Tramite
                     </button>
 
                     <button

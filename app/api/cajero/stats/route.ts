@@ -1,38 +1,19 @@
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const { id_tramite, estado, comentario } = await req.json();
-
-    if (!id_tramite || !estado) {
-      return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
-    }
-
-    const [estadoRows]: any = await pool.query(
-      "SELECT id_estado FROM estados_tramite WHERE nombre_estado = ?",
-      [estado]
-    );
-
-    if (!estadoRows || estadoRows.length === 0) {
-      return NextResponse.json({ error: `Estado '${estado}' no encontrado` }, { status: 404 });
-    }
-
-    const nuevoEstadoId = estadoRows[0].id_estado;
-
-    await pool.query(
-      "UPDATE tramites SET id_estado = ? WHERE id_tramite = ?",
-      [nuevoEstadoId, id_tramite]
-    );
-
-    await pool.query(
-      "INSERT INTO historial_tramite (id_tramite, id_estado, comentario, fecha) VALUES (?, ?, ?, NOW())",
-      [id_tramite, nuevoEstadoId, comentario || ""]
-    );
-
-    return NextResponse.json({ success: true, mensaje: "Trámite procesado" });
+    const [rows]: any = await pool.query(`
+      SELECT 
+        SUM(CASE WHEN nombre_estado = 'Revision Tecnica' THEN 1 ELSE 0 END) AS revision,
+        SUM(CASE WHEN nombre_estado = 'Pagado' THEN 1 ELSE 0 END) AS pagado,
+        SUM(CASE WHEN nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) AS rechazado
+      FROM tramites t
+      JOIN estados_tramite e ON t.id_estado = e.id_estado
+    `);
+    return NextResponse.json(rows[0]);
   } catch (error: any) {
-    console.error("Error procesando trámite:", error);
+    console.error("Error stats:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

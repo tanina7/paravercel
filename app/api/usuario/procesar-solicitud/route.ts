@@ -16,15 +16,10 @@ async function getConnection() {
 
 export async function POST(request: NextRequest) {
   let connection;
-
   try {
-    // 👇 AGREGA EST
+    const { nombreCompleto, carrera, subSede, tramites } = await request.json();
 
-    // 🔥 CAMBIO IMPORTANTE
-    const { id_estudiante, tramites } = await request.json();
-    console.log("BODY:", { id_estudiante, tramites });
-    // 🔥 NUEVA VALIDACIÓN
-    if (!id_estudiante || !tramites || tramites.length === 0) {
+    if (!nombreCompleto || !carrera || !subSede || !tramites || tramites.length === 0) {
       return NextResponse.json(
         { error: 'Datos incompletos' },
         { status: 400 }
@@ -33,25 +28,23 @@ export async function POST(request: NextRequest) {
 
     connection = await getConnection();
 
+    // Generar código único para la solicitud
     const codigoSolicitud = `SOL-${Date.now()}`;
-    const total = tramites.reduce(
-      (sum: number, t: any) => sum + Number(t.costo),
-      0
-    );
+    const total = tramites.reduce((sum: number, t: any) => sum + Number(t.costo), 0);
 
-    // 🔥 AHORA SÍ SE GUARDA EL USUARIO
+    // Crear solicitud (sin id_estudiante requerido)
     const [resultSolicitud] = await connection.execute(
-      `INSERT INTO solicitudes_tramite 
-       (id_estudiante, codigo_tramite, estado_general, total) 
+      `INSERT INTO solicitudes_tramite (id_estudiante, codigo_tramite, estado_general, total) 
        VALUES (?, ?, ?, ?)`,
-      [id_estudiante, codigoSolicitud, 'Pendiente', total]
+      [null, codigoSolicitud, 'Pendiente', total]
     );
 
     const id_solicitud = (resultSolicitud as any).insertId;
 
+    // Crear trámites individuales para cada tipo
     const tramitesCreados: any[] = [];
-
     for (const tramite of tramites) {
+      // Buscar el id_tipo según el nombre
       const [tipos]: any = await connection.execute(
         `SELECT id_tipo FROM tipos_tramite WHERE nombre_tramite = ?`,
         [tramite.name]
@@ -60,17 +53,19 @@ export async function POST(request: NextRequest) {
       if (tipos.length > 0) {
         const id_tipo = tipos[0].id_tipo;
 
+        // Crear detalle de solicitud
         await connection.execute(
           `INSERT INTO detalle_solicitud (id_solicitud, id_tipo, precio) 
            VALUES (?, ?, ?)`,
           [id_solicitud, id_tipo, tramite.costo]
         );
 
-        const codigoTramite = `TRM-${Date.now()}`;
+        // Generar código de seguimiento individual para este trámite
+        const codigoTramite = `TRM-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
+        // Crear trámite con estado inicial (id_estado = 1 = Recibido)
         const [resultTramite] = await connection.execute(
-          `INSERT INTO tramites 
-           (id_solicitud, id_tipo, id_estado, codigo_tramite) 
+          `INSERT INTO tramites (id_solicitud, id_tipo, id_estado, codigo_tramite) 
            VALUES (?, ?, ?, ?)`,
           [id_solicitud, id_tipo, 1, codigoTramite]
         );
@@ -91,18 +86,12 @@ export async function POST(request: NextRequest) {
       tramites: tramitesCreados,
       mensaje: 'Solicitud creada exitosamente',
     });
-
   } catch (error) {
     console.error('Error al procesar solicitud:', error);
-
     return NextResponse.json(
-      { 
-        error: 'Error al procesar la solicitud',
-        details: error instanceof Error ? error.message : 'Error desconocido'
-      },
+      { error: 'Error al procesar la solicitud', details: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500 }
     );
-
   } finally {
     if (connection) {
       await connection.end();

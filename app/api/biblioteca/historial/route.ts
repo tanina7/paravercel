@@ -1,12 +1,12 @@
 import pool from "@/lib/db";
-import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     const [rows]: any = await pool.query(`
       SELECT 
+        h.id_historial, 
         t.id_tramite,
-        COALESCE(u.nombre_completo, 'Sin nombre') AS nombre_completo,
+        u.nombre_completo,
         e.nombre_estado,
         h.comentario,
         h.fecha
@@ -19,9 +19,8 @@ export async function GET() {
       ORDER BY h.fecha DESC
     `);
 
-    return NextResponse.json(rows);
+    return Response.json(rows);
   } catch (error: any) {
-    console.error("Error en API Historial:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }

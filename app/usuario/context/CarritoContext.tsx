@@ -40,9 +40,17 @@ export function CarritoProvider({ children }: { children: ReactNode }) {
     const carritoGuardado = localStorage.getItem('carrito-tramites');
     if (carritoGuardado) {
       try {
-        setItems(JSON.parse(carritoGuardado));
+        const datos = JSON.parse(carritoGuardado);
+        // Validar que sea un array antes de setear
+        if (Array.isArray(datos)) {
+          setItems(datos);
+        } else {
+          console.error('El carrito guardado no es un array válido');
+          setItems([]);
+        }
       } catch (error) {
         console.error('Error al cargar carrito:', error);
+        setItems([]);
       }
     }
     setIsLoaded(true);

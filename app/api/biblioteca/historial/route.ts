@@ -2,7 +2,7 @@ import pool from "@/lib/db";
 
 export async function GET() {
   try {
-    const [rows]: any = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT 
         h.id_historial, 
         t.id_tramite,

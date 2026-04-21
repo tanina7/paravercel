@@ -401,7 +401,7 @@ export default function FormularioPage() {
                     type="text"
                     value={nombreCompleto}
                     onChange={(e) => setNombreCompleto(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all placeholder-gray-600"
                     placeholder="Juan Pérez García"
                     required
                   />
@@ -415,7 +415,7 @@ export default function FormularioPage() {
                   <select
                     value={carrera}
                     onChange={(e) => setCarrera(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
                     required
                   >
                     <option value="">Selecciona una carrera</option>
@@ -435,7 +435,7 @@ export default function FormularioPage() {
                   <select
                     value={subSede}
                     onChange={(e) => setSubSede(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
                     required
                   >
                     <option value="">Selecciona una sub sede</option>

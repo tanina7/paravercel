@@ -5,37 +5,49 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useCarrito } from '@/app/usuario/context/CarritoContext';
+
 interface TramiteQuickAccess {
-  id: string;
-  nombre: string;
+  id: number;
+  name: string;
   descripcion: string;
   icono: string;
+  costo: number;
+  requisitos: string;
 }
 
-const tramitesQuickAccess: TramiteQuickAccess[] = [
+const tramitesQuickAccess = [
   {
-    id: '1',
-    nombre: 'Certificado de Calificaciones',
+    id: 3,
+    name: 'Certificado de Calificaciones',
     descripcion: 'Obtén tu certificado académico con tus calificaciones actualizadas',
     icono: '📋',
+    costo: 50.00,
+    requisitos: 'Consultar en oficina de trámites'
   },
   {
-    id: '2',
-    nombre: 'Extensión de Diploma y Título',
+    id: 2,
+    name: 'Extensión de Diploma y Título',
     descripcion: 'Solicita copias adicionales de tu diploma o título profesional',
     icono: '🎓',
+    costo: 120.00,
+    requisitos: 'Consultar en oficina de trámites'
   },
   {
-    id: '3',
-    nombre: 'Cambio de Plan de Estudios',
+    id: 4,
+    name: 'Cambio de Plan de Estudios',
     descripcion: 'Homologación entre programas académicos disponibles',
     icono: '📚',
+    costo: 80.00,
+    requisitos: 'Consultar en oficina de trámites'
   },
   {
-    id: '4',
-    nombre: 'Cambio de Sub Sede',
+    id: 1,
+    name: 'Cambio de Sub Sede',
     descripcion: 'Convalidación de estudios entre diferentes sedes',
     icono: '🏢',
+    costo: 90.00,
+    requisitos: 'Consultar en oficina de trámites'
   },
 ];
 
@@ -195,24 +207,20 @@ export default function LandingPage() {
           <div className="relative">
             {/* Desktop Grid */}
             <div className="hidden md:grid grid-cols-3 gap-6 mb-8">
-              {tramitesQuickAccess.map((tramite, idx) => (
-                <TramiteCard key={tramite.id} tramite={tramite} index={idx} />
+              {visibleTramites.map((tramite, idx) => (
+                <TramiteCard key={`${tramite.id}-${idx}`} tramite={tramite} index={idx} />
               ))}
             </div>
 
             {/* Mobile Carousel */}
-            <div className="md:hidden">
-              <div className="flex gap-6 overflow-x-auto pb-4 px-4 -mx-4 scrollbar-hide">
-                {tramitesQuickAccess.map((tramite) => (
-                  <div key={tramite.id} className="flex-shrink-0 w-80">
-                    <TramiteCard tramite={tramite} index={0} />
-                  </div>
-                ))}
+            <div className="md:hidden relative flex items-center justify-center">
+              <div className="w-full max-w-sm">
+                <TramiteCard tramite={tramitesQuickAccess[currentIndex]} index={0} />
               </div>
             </div>
 
-            {/* Carousel Navigation - Hidden on Desktop */}
-            <div className="md:hidden flex justify-center gap-3 mt-6">
+            {/* Carousel Navigation */}
+            <div className="flex justify-center gap-3 mt-6">
               <button
                 onClick={handlePrev}
                 className="p-2 rounded-lg bg-gray-200 hover:bg-[#8B1A1A] text-gray-700 hover:text-white transition-all duration-300"
@@ -426,6 +434,19 @@ interface TramiteCardProps {
 
 function TramiteCard({ tramite, index }: TramiteCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { agregarTramite } = useCarrito();
+  const router = useRouter();
+
+  const handleIniciarTramite = () => {
+    agregarTramite({
+      id: tramite.id,
+      name: tramite.name,
+      descripcion: tramite.descripcion,
+      costo: tramite.costo,
+      requisitos: tramite.requisitos,
+    });
+    router.push('/usuario/carrito');
+  };
 
   return (
     <div
@@ -434,27 +455,30 @@ function TramiteCard({ tramite, index }: TramiteCardProps) {
       className="group h-full"
     >
       <div
-        className={`h-full bg-white rounded-xl p-6 border-2 border-gray-200 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer ${isHovered ? 'border-[#8B1A1A] scale-105' : ''
+        className={`h-full bg-white rounded-xl p-6 border-2 border-gray-200 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col ${isHovered ? 'border-[#8B1A1A] scale-105' : ''
           }`}
       >
         <div className="text-5xl mb-4">{tramite.icono}</div>
 
         <h3 className="text-xl font-bold text-gray-900 mb-3">
-          {tramite.nombre}
+          {tramite.name}
         </h3>
 
         <p className="text-gray-600 mb-6 text-sm leading-relaxed h-14 line-clamp-3">
           {tramite.descripcion}
         </p>
 
-        <button
-          className={`w-full py-2.5 rounded-lg font-semibold transition-all duration-300 ${isHovered
-              ? 'bg-[#8B1A1A] text-white shadow-lg'
-              : 'bg-gray-100 text-[#8B1A1A] hover:bg-gray-200'
-            }`}
-        >
-          Iniciar Trámite
-        </button>
+        <div className="mt-auto">
+          <button
+            onClick={handleIniciarTramite}
+            className={`w-full py-2.5 rounded-lg font-semibold transition-all duration-300 ${isHovered
+                ? 'bg-[#8B1A1A] text-white shadow-lg'
+                : 'bg-gray-100 text-[#8B1A1A] hover:bg-gray-200'
+              }`}
+          >
+            Iniciar Trámite
+          </button>
+        </div>
       </div>
     </div>
   );

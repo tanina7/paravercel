@@ -7,7 +7,7 @@ export async function POST(request: Request) {
 
         // CORRECCIÓN 1: Usamos JOIN para traer el nombre del rol desde la tabla 'roles'
         // CORRECCIÓN 2: Usamos 'password_hash' que es el nombre real en tu SQL
-        const [rows]: any = await pool.query(
+        const [rows] = await pool.query(
             `SELECT u.nombre_completo, r.nombre_rol 
              FROM usuarios u
              JOIN roles r ON u.id_rol = r.id_rol

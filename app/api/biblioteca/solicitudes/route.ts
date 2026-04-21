@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     // Esta consulta une las tablas para sacar el Nombre y Correo que pide tu tabla
-    const [rows]: any = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT 
         t.id_tramite,
         u.nombre_completo,

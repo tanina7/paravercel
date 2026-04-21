@@ -5,7 +5,7 @@ export async function POST(req: Request) {
     const { id_tramite, estado, comentario, id_usuario } = await req.json();
 
     // 1. Buscamos el ID del nuevo estado (Finalizado o Rechazado)
-    const [estadoRows]: any = await pool.query(
+    const [estadoRows] = await pool.query(
       "SELECT id_estado FROM estados_tramite WHERE nombre_estado = ?", 
       [estado]
     );

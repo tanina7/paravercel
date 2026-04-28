@@ -2,48 +2,43 @@
 
 import { useEffect, useState } from 'react';
 
-type HistorialPago = {
-  id_pago: number;
-  id_solicitud: number;
-  codigo_tramite: string;
-  monto: number;
-  metodo_pago: string;
-  estado_pago: string;
-  fecha_pago: string;
-  comprobante?: string | null;
+type Historial = {
+  id_tramite: number;
+  nombre_completo: string;
+  correo: string;
+  nombre_estado: string;
+  comentario: string;
+  fecha: string;
 };
 
 export default function Historial({ endpoint }: { endpoint: string }) {
-  const [data, setData] = useState<HistorialPago[]>([]);
+  const [data, setData] = useState<Historial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error('Error al cargar historial');
+
+      const json = await res.json();
+
+      const result = Array.isArray(json)
+        ? json
+        : json.data || json.rows || json.result || [];
+
+      setData(result);
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(endpoint);
-
-        if (!res.ok) throw new Error('Error al cargar historial');
-
-        const json = await res.json();
-
-        // ✅ FIX del error: asegurar array SIEMPRE
-        const result = Array.isArray(json)
-          ? json
-          : json.data || json.rows || json.result || [];
-
-        if (!Array.isArray(result)) {
-          throw new Error('La API no devolvió un array válido');
-        }
-
-        setData(result);
-      } catch (err: any) {
-        setError(err.message || 'Error desconocido');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [endpoint]);
 
@@ -52,94 +47,93 @@ export default function Historial({ endpoint }: { endpoint: string }) {
   }
 
   if (error) {
-    return <p className="p-4 text-red-600 font-semibold">{error}</p>;
+    return (
+      <div className="p-4">
+        <p className="text-red-600 font-semibold">{error}</p>
+        <button
+          onClick={fetchData}
+          className="bg-red-600 text-white px-3 py-1 rounded mt-2"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow p-4">
-      <h1 className="text-xl font-bold text-gray-800 mb-4">
-        Historial de Pagos
+    <div className="bg-white p-4 rounded-xl shadow">
+
+      {/* HEADER igual al Historial2 */}
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">
+        Historial de Trámites
       </h1>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border rounded-lg overflow-hidden">
+        <table className="w-full rounded-lg overflow-hidden">
 
-          {/* HEADER */}
-          <thead className="bg-indigo-900 text-white">
+          {/* HEADER estilo Historial2 */}
+          <thead className="bg-red-900 text-white">
             <tr>
-              <th className="p-3 text-left">ID</th>
-              <th className="p-3 text-left">Trámite</th>
-              <th className="p-3 text-left">Monto</th>
-              <th className="p-3 text-left">Método</th>
+              <th className="p-3 text-left">ID Trámite</th>
+              <th className="p-3 text-left">Nombre</th>
+              <th className="p-3 text-left">Correo</th>
               <th className="p-3 text-left">Estado</th>
+              <th className="p-3 text-left">Comentario</th>
               <th className="p-3 text-left">Fecha</th>
-              <th className="p-3 text-left">Comprobante</th>
             </tr>
           </thead>
 
-          {/* BODY */}
-          <tbody className="divide-y divide-gray-200">
+          {/* BODY estilo Historial2 */}
+          <tbody className="divide-y divide-gray-200 text-gray-800">
+
             {data.length > 0 ? (
-              data.map((pago) => (
-                <tr key={pago.id_pago} className="hover:bg-gray-50">
-
-                  <td className="p-3 font-semibold text-gray-700">
-                    #{pago.id_pago}
+              data.map((item, index) => (
+                <tr
+                  key={`${item.id_tramite}-${index}`}
+                  className="hover:bg-gray-50 transition"
+                >
+                  <td className="p-3 font-medium">
+                    #{item.id_tramite}
                   </td>
 
-                  <td className="p-3 text-gray-700">
-                    {pago.codigo_tramite}
-                  </td>
-
-                  <td className="p-3 font-medium text-green-700">
-                    Bs {pago.monto}
+                  <td className="p-3">
+                    {item.nombre_completo}
                   </td>
 
                   <td className="p-3 text-gray-600">
-                    {pago.metodo_pago}
+                    {item.correo}
                   </td>
 
                   <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold
-                      ${
-                        pago.estado_pago === 'Completado'
-                          ? 'bg-green-100 text-green-700'
-                          : pago.estado_pago === 'Pendiente'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {pago.estado_pago}
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      item.nombre_estado === 'Pagado'
+                        ? 'bg-green-100 text-green-800'
+                        : item.nombre_estado === 'Rechazado'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {item.nombre_estado}
                     </span>
                   </td>
 
-                  <td className="p-3 text-gray-500 text-sm">
-                    {new Date(pago.fecha_pago).toLocaleString('es-BO')}
+                  <td className="p-3 text-gray-600 italic">
+                    {item.comentario || 'Sin observaciones'}
                   </td>
 
-                  <td className="p-3">
-                    {pago.comprobante ? (
-                      <a
-                        href={pago.comprobante}
-                        target="_blank"
-                        className="text-indigo-600 hover:underline font-medium"
-                      >
-                        Ver comprobante
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">Sin archivo</span>
-                    )}
+                  <td className="p-3 text-sm text-gray-500">
+                    {new Date(item.fecha).toLocaleString('es-BO')}
                   </td>
 
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="text-center p-6 text-gray-500">
-                  No hay pagos registrados
+                <td colSpan={6} className="text-center p-6 text-gray-500">
+                  No hay historial disponible
                 </td>
               </tr>
             )}
+
           </tbody>
 
         </table>

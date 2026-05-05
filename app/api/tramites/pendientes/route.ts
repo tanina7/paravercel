@@ -18,8 +18,8 @@ export async function GET() {
       JOIN estudiantes es ON s.id_estudiante = es.id_estudiante
       JOIN usuarios u ON es.id_usuario = u.id_usuario
       
-      -- 🔥 FILTRO ACTUALIZADO: Ahora acepta los que el cajero acaba de poner como 'Pagado'
-      WHERE e.nombre_estado IN ('Pagado', 'Aprobado Biblioteca', 'En Proceso', 'Derivado a Tramites')
+      -- Aquí filtramos para que solo aparezcan los trámites activos
+      WHERE e.nombre_estado IN ('Iniciado', 'Recibido', 'En Proceso', 'Derivado a Tramites')
       
       ORDER BY t.fecha_creacion DESC
     `);

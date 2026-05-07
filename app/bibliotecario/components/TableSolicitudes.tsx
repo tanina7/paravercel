@@ -29,7 +29,7 @@ export default function TableSolicitudes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_tramite: selected.id_tramite,
-          estado: action === 'aprobar' ? 'Revision Tecnica' : 'Rechazado', // <-- DB recibe Revision Tecnica
+          estado: action === 'aprobar' ? 'Finalizado' : 'Rechazado',
           comentario: observacion,
           id_usuario: user?.id_usuario
         })
@@ -71,7 +71,6 @@ export default function TableSolicitudes() {
               <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Nombre</th>
               <th className="p-3 text-left">Correo</th>
-              <th className="p-3 text-left">Estado</th>
               <th className="p-3 text-left">Acciones</th>
             </tr>
           </thead>
@@ -91,13 +90,6 @@ export default function TableSolicitudes() {
 
                   <td className="p-3 text-gray-600">
                     {item.correo}
-                  </td>
-
-                  {/* Mostramos "Aprobado" si el estado real es "Revision Tecnica" */}
-                  <td className="p-3 font-semibold text-gray-800">
-                    {item.nombre_estado === 'Revision Tecnica'
-                      ? 'Aprobado'
-                      : item.nombre_estado}
                   </td>
 
                   <td className="p-3 space-x-2">
@@ -120,7 +112,7 @@ export default function TableSolicitudes() {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center p-6 text-gray-500">
+                <td colSpan={4} className="text-center p-6 text-gray-500">
                   No hay resultados
                 </td>
               </tr>

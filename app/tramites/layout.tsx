@@ -7,14 +7,13 @@ export default function TramitesLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
 
   // Menú basado en tu imagen de referencia
- // Menú actualizado con la nueva sección
   const menuOptions = [
     { name: 'Trámites Activos', href: '/tramites', icon: 'description' },
     { name: 'Historial', href: '/tramites/historial', icon: 'history' },
     { name: 'Transacciones', href: '/tramites/transacciones', icon: 'credit_card' },
-    { name: 'Crear Firma', href: '/tramites/firmas', icon: 'draw' }, 
-    { name: 'Firmas Disponibles', href: '/tramites/firmas-disponibles', icon: 'folder_shared' }, // <-- NUEVA PESTAÑA
+    { name: 'Firmas Digitales', href: '/tramites/firmas', icon: 'draw' },
   ];
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Barra Superior Guindo */}

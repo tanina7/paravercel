@@ -18,7 +18,7 @@ export async function GET(
     console.log(`\n=== Buscando trámite con código: ${codigo} ===`);
 
     // Buscar por codigo_tramite
-    let [rows]: any = await pool.query(
+    let [rows] = await pool.query(
       `SELECT 
         t.id_tramite,
         t.id_solicitud,

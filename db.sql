@@ -25,7 +25,7 @@ SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '8bb25845-258d-11f1-8493-6a161ca7d07b:1-
 f7332f44-271f-11f1-ba2d-fa50dfd4264e:1-266';
 
 --
--- Table structure for table `archivos_tramite`
+-- Table structure for table `archivos_tramite`a
 --
 
 DROP TABLE IF EXISTS `archivos_tramite`;

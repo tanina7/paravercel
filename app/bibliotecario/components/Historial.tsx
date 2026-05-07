@@ -55,7 +55,7 @@ export default function Historial() {
 
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      item.nombre_estado === 'Aprobado'
+                      item.nombre_estado === 'Finalizado'
                         ? 'bg-green-100 text-green-800'
                         : item.nombre_estado === 'Rechazado'
                         ? 'bg-red-100 text-red-800'

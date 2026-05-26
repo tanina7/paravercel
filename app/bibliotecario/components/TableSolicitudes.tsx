@@ -20,7 +20,9 @@ export default function TableSolicitudes() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleSubmit = async (observacion: string) => {
     try {
@@ -29,7 +31,9 @@ export default function TableSolicitudes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_tramite: selected.id_tramite,
-          estado: action === 'aprobar' ? 'Finalizado' : 'Rechazado',
+          estado: action === 'aprobar'
+            ? 'Revision Tecnica'
+            : 'Rechazado',
           comentario: observacion,
           id_usuario: user?.id_usuario
         })
@@ -49,12 +53,10 @@ export default function TableSolicitudes() {
   return (
     <div className="bg-white text-gray-800 p-6 rounded-xl shadow">
 
-      {/* TITULO */}
       <h1 className="text-2xl font-bold mb-4">
         Solicitudes
       </h1>
 
-      {/* BUSCADOR */}
       <input
         type="text"
         placeholder="Buscar por nombre..."
@@ -62,7 +64,6 @@ export default function TableSolicitudes() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* TABLA */}
       <div className="overflow-x-auto">
         <table className="w-full rounded-lg overflow-hidden">
 
@@ -94,15 +95,21 @@ export default function TableSolicitudes() {
 
                   <td className="p-3 space-x-2">
                     <button
-                      onClick={() => { setSelected(item); setAction('aprobar'); }}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition"
+                      onClick={() => {
+                        setSelected(item);
+                        setAction('aprobar');
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm"
                     >
                       Aprobar
                     </button>
 
                     <button
-                      onClick={() => { setSelected(item); setAction('rechazar'); }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm transition"
+                      onClick={() => {
+                        setSelected(item);
+                        setAction('rechazar');
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm"
                     >
                       Rechazar
                     </button>
@@ -122,7 +129,6 @@ export default function TableSolicitudes() {
         </table>
       </div>
 
-      {/* MODAL */}
       {selected && (
         <Modal
           title={action === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud'}

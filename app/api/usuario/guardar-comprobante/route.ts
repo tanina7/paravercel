@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     // Actualizar estado de solicitud a "Pagado" (id_estado = 5)
     try {
       const updateResult = await connection.execute(
-        `UPDATE tramites SET id_estado = 5 WHERE id_solicitud = ?`,
+        `UPDATE tramites SET id_estado = 1 WHERE id_solicitud = ?`,
         [id_solicitud]
       );
       console.log('Estado de solicitud actualizado a Pagado:', updateResult);

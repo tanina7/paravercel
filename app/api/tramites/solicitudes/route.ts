@@ -37,11 +37,9 @@ export async function GET() {
       JOIN solicitudes_tramite s 
         ON t.id_solicitud = s.id_solicitud
 
-      JOIN estudiantes es 
-        ON s.id_estudiante = es.id_estudiante
-
+      -- 🔥 CAMBIO CLAVE: SIN estudiantes
       JOIN usuarios u 
-        ON es.id_usuario = u.id_usuario
+        ON s.id_estudiante = u.id_usuario
 
       JOIN tipos_tramite tt 
         ON t.id_tipo = tt.id_tipo

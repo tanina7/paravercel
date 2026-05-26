@@ -4,6 +4,11 @@ import React from 'react';
 interface HeaderProps {
   toggleSidebar: () => void;
 }
+ const handleLogout = () => {
+    localStorage.removeItem('token'); // 👈 elimina tu token
+    window.location.href = '/auth/login';  // 👈 redirige al login
+  };
+
 
 export default function Header({ toggleSidebar }: HeaderProps) {
   return (
@@ -32,6 +37,12 @@ export default function Header({ toggleSidebar }: HeaderProps) {
         <div className="text-sm">
           Cajero 👤
         </div>
+        <button
+            onClick={handleLogout}
+            className="bg-white text-red-900 px-3 py-1 rounded-md text-xs font-semibold hover:bg-gray-200"
+          >
+            Cerrar sesión
+          </button>
 
       </div>
     </div>

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation'; // <-- Aquí agregamos useRouter
+import { useParams, useRouter } from 'next/navigation';
+import Swal from 'sweetalert2';
 
-// 1. Usamos EXACTAMENTE tu misma interfaz
+// --- INTERFACES ---
 interface FirmaData {
   id_usuario: number;
   nombre_completo: string;
@@ -12,244 +12,246 @@ interface FirmaData {
   firma_digital_url: string;
 }
 
-export default function RevisarTramitePage() {
-  const { id } = useParams();
-  const router = useRouter(); // <-- Inicializamos el router aquí
+interface TramiteData {
+  id_tramite: number;
+  codigo_tramite: string;
+  tipo_tramite: string;
+  nombre_estado: string;
+  nombre_completo: string;
+  correo: string;
+  fecha_creacion: string;
+}
 
-  // Estados
-  const [firmasDB, setFirmasDB] = useState<FirmaData[]>([]);
-  const [firmasSeleccionadas, setFirmasSeleccionadas] = useState<number[]>([]);
+export default function RevisarTramitePage() {
+  const params = useParams(); 
+  const tramiteId = params.id; 
+  const router = useRouter(); 
+
+  // --- ESTADOS ---
+  const [firmas, setFirmas] = useState<FirmaData[]>([]);
+  const [firmaSeleccionada, setFirmaSeleccionada] = useState<string>('');
   const [archivoPDF, setArchivoPDF] = useState<File | null>(null);
-  const [nombreArchivo, setNombreArchivo] = useState('');
+  const [datosTramite, setDatosTramite] = useState<TramiteData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 2. Usamos EXACTAMENTE tu misma lógica de fetch
+  // --- EFECTO PARA CARGAR DATOS ---
   useEffect(() => {
-    fetch('/api/obtener-firmas')
-      .then((res) => res.json())
-      .then((data) => {
-        // Manejamos tanto si devuelve {success: true, firmas: []} como si devuelve un Array directo
-        if (data.success && data.firmas) {
-          setFirmasDB(data.firmas);
-        } else if (Array.isArray(data)) {
-          setFirmasDB(data);
+    const cargarFirmas = fetch('/api/obtener-firmas').then(res => res.json());
+    const cargarTramites = fetch('/api/tramites/solicitudes').then(res => res.json());
+
+    Promise.all([cargarFirmas, cargarTramites])
+      .then(([dataFirmas, dataTramites]) => {
+        if (dataFirmas.success) setFirmas(dataFirmas.firmas);
+        
+        if (Array.isArray(dataTramites)) {
+          const tramiteEncontrado = dataTramites.find(
+            (t) => t.id_tramite.toString() === tramiteId
+          );
+          setDatosTramite(tramiteEncontrado || null);
+        } else {
+          console.error("Error: La API no devolvió una lista de trámites. Devolvió:", dataTramites);
         }
-        setLoading(false);
       })
-      .catch((err) => {
-        console.error("Error al cargar firmas:", err);
-        setLoading(false);
-      });
-  }, []);
+      .catch((err) => console.error("Error cargando datos desde la BD:", err))
+      .finally(() => setLoading(false));
+  }, [tramiteId]);
 
-  // Lógica de selección
-  const toggleFirma = (idFirma: number) => {
-    setFirmasSeleccionadas(prev => 
-      prev.includes(idFirma) ? prev.filter(f => f !== idFirma) : [...prev, idFirma]
-    );
-  };
-
-  const seleccionarTodas = () => {
-    if (firmasSeleccionadas.length === firmasDB.length) {
-      setFirmasSeleccionadas([]);
-    } else {
-      setFirmasSeleccionadas(firmasDB.map(f => f.id_usuario));
-    }
-  };
-
-  // Lógica del PDF
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setArchivoPDF(file);
-      setNombreArchivo(file.name);
-    } else if (file) {
-      alert("Por favor, selecciona un archivo en formato PDF.");
+  // --- FUNCIONES ---
+  const handlePDFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setArchivoPDF(e.target.files[0]);
     }
   };
 
   const handleGenerarCertificado = () => {
-    if (firmasSeleccionadas.length === 0) {
-      alert("Por favor, selecciona al menos una firma.");
+    if (!firmaSeleccionada) {
+      // Mensaje de validación estilizado con SweetAlert2
+      Swal.fire({
+        title: 'Firma Requerida',
+        text: 'Por favor, selecciona una autoridad firmante antes de generar el certificado.',
+        icon: 'warning',
+        confirmButtonColor: '#8B1A1A',
+        confirmButtonText: 'Entendido',
+        background: '#ffffff',
+        customClass: {
+          confirmButton: 'rounded-lg px-6 py-2 font-bold'
+        }
+      });
       return;
     }
-
-    const formData = new FormData();
-    formData.append('id_tramite', id as string);
-    formData.append('ids_firmas', JSON.stringify(firmasSeleccionadas));
-    if (archivoPDF) {
-      formData.append('archivo_respaldo', archivoPDF);
-    }
-
-    console.log("Generando con firmas ID:", firmasSeleccionadas);
-    console.log("Archivo adjunto:", nombreArchivo);
-    
-    // Mostramos mensaje de éxito
-    alert("¡Trámite procesado correctamente!");
-    
-    // <-- AQUÍ HACEMOS EL REDIRECCIONAMIENTO AUTOMÁTICO A LA NUEVA PÁGINA
-    router.push(`/tramites/emision/${id}`);
+    router.push(`/tramites/emitir/${tramiteId}?firmaId=${firmaSeleccionada}`);
   };
 
+  const firmaActual = firmas.find(f => f.id_usuario.toString() === firmaSeleccionada);
+
+  // --- RENDERIZADO CONDICIONAL ---
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <span className="material-symbols-outlined text-5xl animate-spin text-[#8B1A1A]">sync</span>
+        <p className="text-gray-500 font-medium">Buscando el trámite {tramiteId} en la base de datos...</p>
+      </div>
+    );
+  }
+
+  if (!datosTramite) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <span className="material-symbols-outlined text-5xl text-gray-300">search_off</span>
+        <h2 className="text-xl font-bold text-gray-700">Trámite no encontrado</h2>
+        <p className="text-gray-500">No se encontró ningún trámite pagado con el ID: {tramiteId}</p>
+      </div>
+    );
+  }
+
+  // --- INTERFAZ PRINCIPAL ---
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
       
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
-        <Link href="/tramites" className="text-gray-400 hover:text-[#8B1A1A] transition-colors">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
-        <h2 className="text-xl font-medium text-gray-700">
-          Revisar Trámite: <span className="font-bold text-[#8B1A1A]">Legalización de Título</span>
+      {/* Encabezado */}
+      <div className="flex items-center gap-4 mb-8">
+        <button onClick={() => router.back()} className="text-gray-500 hover:text-[#8B1A1A] transition-colors">
+          <span className="material-symbols-outlined text-2xl">arrow_back</span>
+        </button>
+        <h2 className="text-2xl font-normal text-gray-700">
+          Revisar Trámite: <span className="font-bold text-[#8B1A1A]">{datosTramite.tipo_tramite}</span>
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* ================= COLUMNA IZQUIERDA ================= */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Visor de Documento Falso */}
-          <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center text-sm">
-              <span className="font-bold text-gray-700">Documento de Solicitud</span>
-              <span className="material-symbols-outlined text-gray-400 cursor-pointer hover:text-gray-600">download</span>
-            </div>
-            <div className="bg-[#1e293b] p-10 flex justify-center min-h-[500px]">
-               <div className="bg-white w-[400px] h-[550px] shadow-2xl p-10 flex flex-col">
-                  <h3 className="text-2xl font-black text-[#8B1A1A] text-center border-b pb-4 mb-8">UNIVALLE</h3>
-                  <div className="space-y-4 text-sm">
-                    <p className="text-gray-500">Estudiante: <span className="text-gray-900 font-medium ml-1">Ingrid Marcela Zambrana Grandy</span></p>
-                    <p className="text-gray-500">Carrera: <span className="text-gray-900 font-medium ml-1">Derecho</span></p>
-                    <p className="text-gray-500">Año: <span className="text-gray-900 font-medium ml-1">5to Año</span></p>
+        {/* COLUMNA IZQUIERDA: Visor */}
+        <div className="lg:col-span-2 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <span className="font-bold text-gray-700 text-sm">Documento de Solicitud ({datosTramite.codigo_tramite})</span>
+          </div>
+          <div className="bg-[#1c2536] p-8 flex-1 flex justify-center items-center min-h-[600px]">
+            <div className="bg-white w-full max-w-lg min-h-[500px] p-12 shadow-lg relative">
+              <h1 className="text-3xl font-black text-center text-[#8B1A1A] mb-8 border-b-2 border-[#8B1A1A] pb-4">UNIVALLE</h1>
+              <div className="space-y-4 text-sm text-gray-700">
+                <p><span className="text-gray-500 mr-2 font-semibold">Solicitante:</span> {datosTramite.nombre_completo}</p>
+                <p><span className="text-gray-500 mr-2 font-semibold">Correo:</span> {datosTramite.correo}</p>
+                <p><span className="text-gray-500 mr-2 font-semibold">Trámite:</span> {datosTramite.tipo_tramite}</p>
+                
+                {firmaActual && (
+                  <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                    <img src={firmaActual.firma_digital_url} alt="Firma" className="h-20 object-contain mix-blend-multiply" />
+                    <div className="border-t border-gray-400 w-48 mt-2 text-center text-xs text-gray-500 pt-1 font-medium">
+                      {firmaActual.nombre_completo}
+                    </div>
                   </div>
-               </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMNA DERECHA: Controles */}
+        <div className="space-y-6">
+          
+          {/* Tarjeta Información */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">person</span> Información del Solicitante
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-gray-500">Nombre Completo</p>
+                <p className="font-medium text-gray-800">{datosTramite.nombre_completo}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Estado del Trámite</p>
+                <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1 rounded-full text-sm font-bold border border-green-100">
+                  <span className="material-symbols-outlined text-sm">verified</span>
+                  {datosTramite.nombre_estado}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* ================= SELECTOR DE FIRMAS REALES ================= */}
-          <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-8">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-6">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#8B1A1A]">draw</span>
-                Selección de Firmas
-              </h3>
-              <button 
-                onClick={seleccionarTodas}
-                className="text-xs font-bold text-[#8B1A1A] hover:underline uppercase tracking-wider bg-red-50 px-3 py-1.5 rounded-lg"
-              >
-                {firmasSeleccionadas.length === firmasDB.length && firmasDB.length > 0 ? 'Desmarcar Todas' : 'Seleccionar Todas'}
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-10 text-gray-400">
-                <span className="material-symbols-outlined animate-spin text-3xl mb-2">sync</span>
-                <p>Cargando firmas autorizadas...</p>
-              </div>
-            ) : firmasDB.length === 0 ? (
-              <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">folder_off</span>
-                <p className="text-gray-500 font-medium">No hay firmas disponibles en la base de datos.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {firmasDB.map((firma) => (
-                  <label 
-                    key={firma.id_usuario} 
-                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                      firmasSeleccionadas.includes(firma.id_usuario) 
-                        ? 'border-[#8B1A1A] bg-red-50/30 shadow-sm' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input 
-                      type="checkbox" 
-                      className="w-5 h-5 accent-[#8B1A1A] rounded cursor-pointer"
-                      checked={firmasSeleccionadas.includes(firma.id_usuario)}
-                      onChange={() => toggleFirma(firma.id_usuario)}
+          {/* Tarjeta Selector de Firmas Mejorado */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">draw</span> Autoridad Firmante
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">Seleccione la autoridad responsable de firmar este documento:</p>
+            
+            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+              {firmas.map((firma) => (
+                <div 
+                  key={firma.id_usuario}
+                  onClick={() => setFirmaSeleccionada(firma.id_usuario.toString())}
+                  className={`relative flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                    firmaSeleccionada === firma.id_usuario.toString() 
+                      ? 'border-[#8B1A1A] bg-red-50/30 shadow-sm' 
+                      : 'border-gray-100 hover:border-gray-300 bg-gray-50/50 hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Radio button visual */}
+                  <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
+                    firmaSeleccionada === firma.id_usuario.toString() ? 'border-[#8B1A1A]' : 'border-gray-300'
+                  }`}>
+                    {firmaSeleccionada === firma.id_usuario.toString() && (
+                      <div className="w-2 h-2 rounded-full bg-[#8B1A1A]" />
+                    )}
+                  </div>
+                  
+                  {/* Info de la firma */}
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-sm text-gray-800 truncate">{firma.nombre_completo}</p>
+                      <p className="text-[10px] text-gray-500 uppercase font-medium mt-0.5">Autorizado</p>
+                    </div>
+                    {/* Miniatura de la firma */}
+                    <img 
+                      src={firma.firma_digital_url} 
+                      alt="Firma miniatura" 
+                      className="h-8 w-16 object-contain mix-blend-multiply opacity-60" 
                     />
-                    
-                    <div className="bg-white border border-gray-200 rounded p-1 w-14 h-10 flex items-center justify-center shadow-sm">
-                      <img 
-                        src={firma.firma_digital_url} 
-                        alt="Firma"
-                        className="max-h-full max-w-full object-contain mix-blend-multiply"
-                        onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')} // Mismo fallback de tu código
-                      />
-                    </div>
-                    
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-gray-800 leading-tight">{firma.nombre_completo}</span>
-                      <span className="text-xs text-gray-400 mt-0.5">ID: {firma.id_usuario}</span>
-                    </div>
-                  </label>
-                ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {firmas.length === 0 && (
+              <div className="text-center py-6 text-gray-400">
+                <span className="material-symbols-outlined text-3xl mb-2">history_edu</span>
+                <p className="text-sm">No hay firmas registradas.</p>
               </div>
             )}
           </div>
-        </div>
 
-        {/* ================= COLUMNA DERECHA ================= */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3 mb-4">
-              Información del Estudiante
+          {/* Tarjeta Adjuntar PDF */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">attach_file</span> Adjuntar Respaldo (Opcional)
             </h3>
-            <div className="space-y-4 text-sm">
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Nombre Completo</p>
-                <p className="font-medium text-gray-900">Ingrid Marcela Zambrana Grandy</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Carrera y Año</p>
-                <p className="font-medium text-gray-900">Derecho - 5to Año</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Estado Financiero</p>
-                <p className="font-medium text-green-600 flex items-center gap-1 mt-1 bg-green-50 w-fit px-2 py-1 rounded-md">
-                  <span className="material-symbols-outlined text-[16px]">verified</span> 
-                  Solvente y Pagado
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ================= SUBIR PDF ================= */}
-          <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3 mb-4">
-              Adjuntar Archivos
-            </h3>
-            <label className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-              archivoPDF ? 'border-[#8B1A1A] bg-red-50/20' : 'border-gray-200 hover:bg-gray-50'
-            }`}>
-              <input 
-                type="file" 
-                accept="application/pdf" 
-                className="hidden" 
-                onChange={handleFileChange} 
-              />
-              <span className={`material-symbols-outlined text-4xl mb-3 transition-colors ${archivoPDF ? 'text-[#8B1A1A]' : 'text-gray-300'}`}>
-                {archivoPDF ? 'task' : 'cloud_upload'}
-              </span>
-              <span className="text-sm font-bold text-gray-700">
-                {archivoPDF ? 'PDF Seleccionado' : 'Subir Respaldo PDF'}
-              </span>
-              <span className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
-                {archivoPDF ? nombreArchivo : 'Haz clic para explorar tus archivos'}
-              </span>
+            <label className="border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#8B1A1A] hover:bg-red-50/30 transition-colors group">
+              <input type="file" accept=".pdf" className="hidden" onChange={handlePDFChange} />
+              {archivoPDF ? (
+                <div className="flex flex-col items-center text-green-600">
+                  <span className="material-symbols-outlined text-3xl mb-2">check_circle</span>
+                  <p className="font-bold text-sm truncate max-w-[200px]">{archivoPDF.name}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">Clic para cambiar</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center text-gray-400 group-hover:text-[#8B1A1A]">
+                  <span className="material-symbols-outlined text-3xl mb-2 transition-transform group-hover:-translate-y-1">cloud_upload</span>
+                  <p className="font-bold text-sm">Subir PDF</p>
+                </div>
+              )}
             </label>
           </div>
 
+          {/* Botón Principal */}
           <button 
             onClick={handleGenerarCertificado}
-            className="w-full bg-[#8B1A1A] hover:bg-[#701515] text-white py-4 rounded-xl text-sm font-bold shadow-lg transition-transform hover:-translate-y-1 flex justify-center items-center gap-2"
+            className="w-full bg-[#8B1A1A] hover:bg-[#701515] active:bg-[#5a1111] text-white font-bold py-4 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
           >
             <span className="material-symbols-outlined">workspace_premium</span>
-            Generar Certificado
+            Continuar a Emisión
           </button>
         </div>
-
       </div>
     </div>
   );

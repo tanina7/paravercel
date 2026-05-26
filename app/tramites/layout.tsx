@@ -12,6 +12,7 @@ export default function TramitesLayout({ children }: { children: React.ReactNode
     { name: 'Historial', href: '/tramites/historial', icon: 'history' },
     { name: 'Transacciones', href: '/tramites/transacciones', icon: 'credit_card' },
     { name: 'Firmas Digitales', href: '/tramites/firmas', icon: 'draw' },
+    { name: 'Firmas Disponibles', href: '/tramites/firmas-disponibles', icon: 'draw' }
   ];
 
   return (

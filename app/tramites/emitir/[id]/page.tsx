@@ -72,6 +72,7 @@ export default function EmitirCertificadoPage() {
       window.print();
     }, 100);
   };
+
   const handleFinalizar = async () => {
     const result = await Swal.fire({
       title: '¿Emitir Certificado?',

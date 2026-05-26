@@ -7,13 +7,14 @@ export async function POST(request: Request) {
   try {
     const data = await request.formData();
     
-    // 1. Recibimos los datos del formulario
+    // 1. Recibimos los datos del formulario (AHORA INCLUIMOS EL ID)
+    const id_usuario = data.get('id_usuario'); 
     const nombre = data.get('nombre') as string || '';
     const apellido = data.get('apellido') as string || '';
     const foto = data.get('foto') as File;
     const firma = data.get('firma') as File;
 
-    if (!foto || !firma) {
+    if (!id_usuario || !foto || !firma) {
       return NextResponse.json({ error: "Faltan datos o imágenes" }, { status: 400 });
     }
 
@@ -48,16 +49,17 @@ export async function POST(request: Request) {
       }
     });
 
-    // 6. Ejecutamos el INSERT (Para que se cree un nuevo registro en tu tabla 'usuarios')
-    // Guardamos las rutas cortas (/uploads/foto.png) en la base de datos
+    // 6. LA SOLUCIÓN: Usar UPDATE para agregar la firma al usuario existente
     await connection.execute(
-      `INSERT INTO usuarios (nombre_completo, foto_perfil_url, firma_digital_url) VALUES (?, ?, ?)`,
-      [nombreCompleto, fotoUrl, firmaUrl]
+      `UPDATE usuarios 
+       SET nombre_completo = ?, foto_perfil_url = ?, firma_digital_url = ? 
+       WHERE id_usuario = ?`,
+      [nombreCompleto, fotoUrl, firmaUrl, id_usuario]
     );
 
     await connection.end();
 
-    return NextResponse.json({ success: true, message: "Firma creada y guardada en local" });
+    return NextResponse.json({ success: true, message: "Firma actualizada y guardada en local" });
 
   } catch (error) {
     console.error("Error en la API de subida:", error);

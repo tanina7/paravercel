@@ -1,93 +1,112 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 // ==========================================
-// DATOS FALSOS (Simulando trámites ya terminados)
+// INTERFAZ DE DATOS REALES
 // ==========================================
-const transaccionesFinalizadas = [
-  {
-    id_tramite: 4,
-    codigo_tramite: 'TRM-004',
-    estudiante: 'Leandro Estudiante',
-    carrera: 'Ingeniería de Sistemas',
-    tipo_tramite: 'Legalización de Título',
-    fecha_emision: '06/05/2026',
-    codigo_certificado: 'CERT-2026-847291',
-    codigo_seguridad: 'J55HSCF233'
-  },
-  {
-    id_tramite: 1,
-    codigo_tramite: 'TRM-001',
-    estudiante: 'María González Pérez',
-    carrera: 'Ingeniería de Sistemas',
-    tipo_tramite: 'Cambio de Sub Sede',
-    fecha_emision: '05/05/2026',
-    codigo_certificado: 'CERT-2026-102938',
-    codigo_seguridad: 'X99KLM442'
-  },
-  {
-    id_tramite: 5,
-    codigo_tramite: 'TRM-005',
-    estudiante: 'Carlos Rodríguez Silva',
-    carrera: 'Administración',
-    tipo_tramite: 'Certificado de Notas',
-    fecha_emision: '02/05/2026',
-    codigo_certificado: 'CERT-2026-556123',
-    codigo_seguridad: 'A12ZXY889'
-  }
-];
+interface TransaccionData {
+  id_solicitud: number;
+  nro_recibo: string;
+  estudiante: string;
+  concepto: string;
+  monto: string | number;
+  cajero: string;
+}
 
 export default function TransaccionesPage() {
-  // Estado para el buscador
+  // --- ESTADOS ---
+  const [transacciones, setTransacciones] = useState<TransaccionData[]>([]);
   const [busqueda, setBusqueda] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // Lógica del buscador: Filtra por Código de Trámite, Certificado o Nombre
-  const transaccionesFiltradas = transaccionesFinalizadas.filter((t) => 
-    t.codigo_tramite.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.codigo_certificado.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.estudiante.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // --- EFECTO PARA CARGAR DATOS ---
+  useEffect(() => {
+    fetch('/api/transacciones')
+      .then((res) => {
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setTransacciones(data);
+        } else {
+          console.error("Error cargando transacciones. Formato incorrecto:", data);
+        }
+      })
+      .catch((err) => console.error("Error de red:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // --- LÓGICA DEL BUSCADOR PROTEGIDA ---
+  // Usamos (|| '') para evitar que la página "explote" si algún dato en la BD es nulo
+  const transaccionesFiltradas = transacciones.filter((t) => {
+    const recibo = t.nro_recibo || '';
+    const estudiante = t.estudiante || '';
+    const concepto = t.concepto || '';
+    const query = busqueda.toLowerCase();
+
+    return (
+      recibo.toLowerCase().includes(query) ||
+      estudiante.toLowerCase().includes(query) ||
+      concepto.toLowerCase().includes(query)
+    );
+  });
+
+  // --- RENDERIZADO CONDICIONAL (Cargando) ---
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <span className="material-symbols-outlined text-5xl animate-spin text-[#8B1A1A]">sync</span>
+        <p className="text-gray-500 font-medium">Cargando transacciones financieras...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12 p-6">
       
-      {/* 1. Encabezado y Buscador */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-6">
+      {/* 1. Encabezado y Botón de Exportar */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8 border-b border-gray-100 pb-6">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Transacciones y Emisiones</h2>
-          <p className="text-gray-500 mt-2 text-sm">
-            Historial de todos los trámites que ya han sido finalizados y emitidos.
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Transacciones Financieras (Caja)</h2>
+          <p className="text-gray-500 text-sm">
+            Consulta en tiempo real de pagos validados asociados a trámites.
           </p>
         </div>
         
-        {/* Buscador Funcional */}
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-3 text-gray-400">
-            search
-          </span>
-          <input 
-            type="text" 
-            placeholder="Buscar por TRM, CERT o nombre..." 
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#8B1A1A] focus:ring-1 focus:ring-[#8B1A1A] transition-shadow shadow-sm"
-          />
-        </div>
+        {/* Botón Exportar */}
+        <button className="bg-[#334155] hover:bg-[#1e293b] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 shadow-sm">
+          <span className="material-symbols-outlined text-[18px]">download</span>
+          Exportar a Excel
+        </button>
+      </div>
+
+      {/* Buscador */}
+      <div className="relative w-full md:w-96 mb-6">
+        <span className="material-symbols-outlined absolute left-3 top-3 text-gray-400">
+          search
+        </span>
+        <input 
+          type="text" 
+          placeholder="Buscar por Nro Recibo, estudiante o concepto..." 
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#8B1A1A] focus:ring-1 focus:ring-[#8B1A1A] transition-shadow shadow-sm"
+        />
       </div>
 
       {/* 2. Tabla de Transacciones */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-400 text-[11px] font-bold uppercase tracking-widest border-b border-gray-200">
-                <th className="py-5 px-6">Código Trámite</th>
-                <th className="py-5 px-6">Estudiante</th>
-                <th className="py-5 px-6 text-center">Certificado Emitido</th>
-                <th className="py-5 px-6 text-center">Fecha Emisión</th>
-                <th className="py-5 px-6 text-center">Acción</th>
+              <tr className="bg-gray-50/50 text-gray-500 text-[10px] font-bold uppercase tracking-wider border-b border-gray-100">
+                <th className="py-4 px-6 text-center">NRO. RECIBO</th>
+                <th className="py-4 px-6">ESTUDIANTE</th>
+                <th className="py-4 px-6">CONCEPTO PRINCIPAL</th>
+                <th className="py-4 px-6 text-center">MONTO TOTAL</th>
+                <th className="py-4 px-6 text-center">CAJERO</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -96,66 +115,48 @@ export default function TransaccionesPage() {
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
                     <span className="material-symbols-outlined text-5xl text-gray-300 mb-3">search_off</span>
-                    <p className="text-gray-500 font-medium">No se encontraron transacciones con "{busqueda}"</p>
+                    <p className="text-gray-500 font-medium">No se encontraron transacciones</p>
                   </td>
                 </tr>
               ) : (
-                transaccionesFiltradas.map((t) => (
-                  <tr key={t.id_tramite} className="hover:bg-gray-50 transition-colors group">
+                transaccionesFiltradas.map((t, index) => (
+                  <tr key={t.id_solicitud || index} className="hover:bg-gray-50/80 transition-colors">
                     
-                    {/* Código del Trámite */}
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-gray-100 text-gray-700 font-mono text-sm font-bold border border-gray-200">
-                        {t.codigo_tramite}
+                    {/* Nro Recibo */}
+                    <td className="py-4 px-6 text-center">
+                      <span className="text-[#8B1A1A] font-medium text-sm">
+                        {t.nro_recibo}
                       </span>
                     </td>
 
-                    {/* Datos del Estudiante */}
+                    {/* Estudiante */}
                     <td className="py-4 px-6">
                       <p className="font-bold text-gray-900 text-sm">{t.estudiante}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">{t.carrera} - {t.tipo_tramite}</p>
                     </td>
 
-                    {/* Datos del Certificado Generado */}
-                    <td className="py-4 px-6 text-center">
-                      <p className="font-mono text-[#8B1A1A] font-bold text-sm">{t.codigo_certificado}</p>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider mt-0.5 flex items-center justify-center gap-1">
-                        <span className="material-symbols-outlined text-[12px]">lock</span>
-                        {t.codigo_seguridad}
-                      </p>
+                    {/* Concepto */}
+                    <td className="py-4 px-6">
+                      <p className="text-gray-500 text-sm">{t.concepto}</p>
                     </td>
 
-                    {/* Fecha */}
+                    {/* Monto */}
                     <td className="py-4 px-6 text-center">
-                      <span className="text-sm text-gray-600 font-medium">{t.fecha_emision}</span>
+                      <span className="font-bold text-green-600 text-sm">
+                        {Number(t.monto).toFixed(2)} Bs.
+                      </span>
                     </td>
 
-                    {/* Botones de Acción */}
+                    {/* Cajero */}
                     <td className="py-4 px-6 text-center">
-                      <Link 
-                        href={`/tramites/emision/${t.id_tramite}`}
-                        className="inline-flex items-center justify-center gap-1 text-[#8B1A1A] hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-bold transition-colors border border-transparent hover:border-red-100"
-                        title="Ver Certificado"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
-                        Ver Documento
-                      </Link>
+                      <span className="text-gray-500 text-sm">{t.cajero}</span>
                     </td>
+
                   </tr>
                 ))
               )}
 
             </tbody>
           </table>
-        </div>
-        
-        {/* Footer de la tabla */}
-        <div className="bg-gray-50/50 border-t border-gray-100 px-6 py-4 flex justify-between items-center text-xs text-gray-500">
-          <span>Mostrando {transaccionesFiltradas.length} transacciones</span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px] text-green-600">verified</span>
-            Todos los documentos son válidos
-          </span>
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ export default function HistorialPage() {
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
-    fetch('/api/tramites/historial')
+    fetch('/api/historial')
       .then(async (res) => {
         const text = await res.text();
 
@@ -29,11 +29,14 @@ export default function HistorialPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 🔍 FILTRO
+  // 🔍 FILTRO ARREGLADO
   const tramitesFiltrados = tramites.filter((t) => {
-    const query = busqueda.toLowerCase();
-    const codigo = (t.codigo_tramite || `TR-${t.id_tramite}`).toLowerCase();
-    const estudiante = (t.nombre_completo || '').toLowerCase();
+    if (!busqueda.trim()) return true;
+
+    const query = busqueda.trim().toLowerCase();
+
+    const codigo = String(t.codigo_tramite || `TR-${t.id_tramite}`).toLowerCase();
+    const estudiante = String(t.nombre_completo || '').toLowerCase();
 
     return (
       codigo.includes(query) ||
@@ -62,7 +65,7 @@ export default function HistorialPage() {
             placeholder="Buscar..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full px-4 py-2 border rounded-xl text-sm"
+            className="w-full px-4 py-2 border rounded-xl text-sm text-gray-900 bg-white"
           />
         </div>
       </div>
@@ -112,7 +115,7 @@ export default function HistorialPage() {
                 tramitesFiltrados.map((t) => (
                   <tr key={t.id_tramite} className="hover:bg-gray-50">
 
-                    {/* Código MÁS OSCURO */}
+                    {/* Código */}
                     <td className="py-4 px-6 font-mono font-bold text-black">
                       {t.codigo_tramite || `TR-${t.id_tramite}`}
                     </td>

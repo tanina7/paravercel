@@ -124,32 +124,32 @@ export default function CrearFirmaPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Nombres</label>
+            <label className="block text-sm font-bold text-gray-950 mb-2">Nombres</label>
             <input 
               type="text" 
               placeholder="Ej. Ingrid Marcela"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-gray-50 hover:bg-white"
+              className="w-full border-2 border-black rounded-xl px-4 py-3 text-gray-950 placeholder-gray-700 font-medium focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Apellidos</label>
+            <label className="block text-sm font-bold text-gray-950 mb-2">Apellidos</label>
             <input 
               type="text" 
               placeholder="Ej. Zambrana Grandy"
               value={apellido}
               onChange={(e) => setApellido(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-gray-50 hover:bg-white"
+              className="w-full border-2 border-black rounded-xl px-4 py-3 text-gray-950 placeholder-gray-700 font-medium focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Rol Asignado</label>
+            <label className="block text-sm font-bold text-gray-950 mb-2">Rol Asignado</label>
             <div className="relative">
               <select 
                 value={rol}
                 onChange={(e) => setRol(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-gray-50 hover:bg-white appearance-none cursor-pointer"
+                className="w-full border-2 border-black rounded-xl px-4 py-3 text-gray-950 font-bold focus:ring-2 focus:ring-[#8B1A1A]/50 focus:border-[#8B1A1A] outline-none transition-all bg-white appearance-none cursor-pointer"
               >
                 <option value="" disabled>Seleccione un rol...</option>
                 <option value="Estudiante">Estudiante</option>
@@ -157,7 +157,7 @@ export default function CrearFirmaPage() {
                 <option value="Vicerrector Académico">Vicerrector Académico</option>
                 <option value="Rector">Rector (Cargo Único)</option>
               </select>
-              <span className="material-symbols-outlined absolute right-3 top-3.5 text-gray-400 pointer-events-none">expand_more</span>
+              <span className="material-symbols-outlined absolute right-3 top-3.5 text-black pointer-events-none">expand_more</span>
             </div>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function CrearFirmaPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Tarjeta de Foto */}
-          <div className="relative border-2 border-dashed border-gray-200 rounded-2xl hover:border-[#8B1A1A] hover:bg-red-50/30 transition-all group overflow-hidden bg-gray-50/50">
+          <div className="relative border-2 border-dashed border-black rounded-2xl hover:border-[#8B1A1A] hover:bg-red-50/30 transition-all group overflow-hidden bg-white">
             <input 
               type="file" accept="image/*"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -188,18 +188,18 @@ export default function CrearFirmaPage() {
                 </div>
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-3xl text-[#8B1A1A]">photo_camera</span>
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-3xl text-black">photo_camera</span>
                   </div>
-                  <h4 className="font-bold text-gray-700">Fotografía del Usuario</h4>
-                  <p className="text-xs text-gray-400 max-w-[200px]">Haz clic o arrastra una imagen. Formatos: JPG, PNG.</p>
+                  <h4 className="font-bold text-black">Fotografía del Usuario</h4>
+                  <p className="text-xs text-gray-700 max-w-[200px]">Haz clic o arrastra una imagen. Formatos: JPG, PNG.</p>
                 </>
               )}
             </div>
           </div>
 
           {/* Tarjeta de Firma */}
-          <div className="relative border-2 border-dashed border-gray-200 rounded-2xl hover:border-[#8B1A1A] hover:bg-red-50/30 transition-all group overflow-hidden bg-gray-50/50">
+          <div className="relative border-2 border-dashed border-black rounded-2xl hover:border-[#8B1A1A] hover:bg-red-50/30 transition-all group overflow-hidden bg-white">
             <input 
               type="file" accept="image/*"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -207,7 +207,7 @@ export default function CrearFirmaPage() {
             />
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-3">
               {fotoFirma ? (
-                <div className="relative bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="relative bg-white p-4 rounded-xl shadow-sm border border-black">
                   <img src={fotoFirma} alt="Vista previa firma" className="max-w-[200px] h-24 object-contain" />
                   <div className="absolute -top-3 -right-3 bg-[#8B1A1A] text-white p-1.5 rounded-full shadow-sm">
                     <span className="material-symbols-outlined text-sm">edit</span>
@@ -215,11 +215,11 @@ export default function CrearFirmaPage() {
                 </div>
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-3xl text-[#8B1A1A]">draw</span>
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-3xl text-black">draw</span>
                   </div>
-                  <h4 className="font-bold text-gray-700">Firma Escaneada</h4>
-                  <p className="text-xs text-gray-400 max-w-[200px]">Sube una imagen clara de la firma con fondo blanco.</p>
+                  <h4 className="font-bold text-black">Firma Escaneada</h4>
+                  <p className="text-xs text-gray-700 max-w-[200px]">Sube una imagen clara de la firma con fondo blanco.</p>
                 </>
               )}
             </div>

@@ -12,7 +12,6 @@ export default function HistorialPage() {
     fetch('/api/tramites/historial')
       .then(async (res) => {
         const text = await res.text();
-        console.log("RESPUESTA CRUDA DEL SERVIDOR:", text);
 
         if (!res.ok) {
           throw new Error(`Error ${res.status}: ${text}`);
@@ -35,20 +34,18 @@ export default function HistorialPage() {
     const query = busqueda.toLowerCase();
     const codigo = (t.codigo_tramite || `TR-${t.id_tramite}`).toLowerCase();
     const estudiante = (t.nombre_completo || '').toLowerCase();
-    const tipo = (t.tipo_tramite || 'sin tipo').toLowerCase();
 
     return (
       codigo.includes(query) ||
-      estudiante.includes(query) ||
-      tipo.includes(query)
+      estudiante.includes(query)
     );
   });
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-500 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-2">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             Historial de Trámites
@@ -60,48 +57,54 @@ export default function HistorialPage() {
 
         {/* BUSCADOR */}
         <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">
-            search
-          </span>
           <input
             type="text"
-            placeholder="Buscar por código o estudiante..."
+            placeholder="Buscar..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#8B1A1A] focus:ring-1 focus:ring-[#8B1A1A] shadow-sm bg-white"
+            className="w-full px-4 py-2 border rounded-xl text-sm"
           />
         </div>
       </div>
 
       {/* TABLA */}
-      <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full">
 
             {/* HEAD */}
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase">Código</th>
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase">Estudiante</th>
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase">Tipo</th>
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase">Fecha</th>
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase text-center">Estado</th>
-                <th className="py-5 px-6 text-xs font-bold text-gray-400 uppercase text-center">Acción</th>
+              <tr className="bg-gray-50 border-b">
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase">
+                  Código
+                </th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase">
+                  Estudiante
+                </th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase">
+                  Fecha
+                </th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase text-center">
+                  Estado
+                </th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase text-center">
+                  Acción
+                </th>
               </tr>
             </thead>
 
             {/* BODY */}
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y">
 
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-20 text-center text-gray-400">
+                  <td colSpan={5} className="py-16 text-center text-gray-400">
                     Cargando...
                   </td>
                 </tr>
               ) : tramitesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-20 text-center text-gray-400">
+                  <td colSpan={5} className="py-16 text-center text-gray-400">
                     No hay resultados
                   </td>
                 </tr>
@@ -109,15 +112,15 @@ export default function HistorialPage() {
                 tramitesFiltrados.map((t) => (
                   <tr key={t.id_tramite} className="hover:bg-gray-50">
 
-                    {/* Código */}
-                    <td className="py-4 px-6 font-mono font-bold">
+                    {/* Código MÁS OSCURO */}
+                    <td className="py-4 px-6 font-mono font-bold text-black">
                       {t.codigo_tramite || `TR-${t.id_tramite}`}
                     </td>
 
                     {/* Estudiante */}
                     <td className="py-4 px-6">
                       <div>
-                        <div className="font-semibold">
+                        <div className="font-semibold text-gray-900">
                           {t.nombre_completo}
                         </div>
                         <div className="text-xs text-gray-400">
@@ -126,19 +129,14 @@ export default function HistorialPage() {
                       </div>
                     </td>
 
-                    {/* Tipo */}
-                    <td className="py-4 px-6">
-                      {t.tipo_tramite || 'Sin tipo'}
-                    </td>
-
                     {/* Fecha */}
-                    <td className="py-4 px-6 text-sm text-gray-500">
+                    <td className="py-4 px-6 text-sm text-gray-600">
                       {new Date(t.fecha_creacion).toLocaleDateString()}
                     </td>
 
                     {/* Estado */}
                     <td className="py-4 px-6 text-center">
-                      <span className="text-green-600 text-xs font-bold">
+                      <span className="text-green-600 font-semibold text-sm">
                         Finalizado
                       </span>
                     </td>
@@ -147,7 +145,7 @@ export default function HistorialPage() {
                     <td className="py-4 px-6 text-center">
                       <Link
                         href={`/tramites/revisar/${t.id_tramite}`}
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 hover:underline font-medium"
                       >
                         Ver
                       </Link>

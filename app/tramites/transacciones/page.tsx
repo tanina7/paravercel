@@ -120,7 +120,7 @@ export default function TransaccionesPage() {
                 </tr>
               ) : (
                 transaccionesFiltradas.map((t, index) => (
-                  <tr key={t.id_solicitud || index} className="hover:bg-gray-50/80 transition-colors">
+                  <tr key={`${t.id_solicitud}-${t.nro_recibo}-${index}`} className="hover:bg-gray-50/80 transition-colors">
                     
                     {/* Nro Recibo */}
                     <td className="py-4 px-6 text-center">

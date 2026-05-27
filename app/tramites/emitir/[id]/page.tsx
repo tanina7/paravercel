@@ -28,7 +28,8 @@ export default function EmitirCertificadoPage() {
   const router = useRouter();
   
   const searchParams = useSearchParams();
-  const firmaIdURL = searchParams.get('firmaId');
+  // Ahora capturamos 'firmasIds' (plural) que viene como "1,3,5"
+  const firmasIdsURL = searchParams.get('firmasIds') || '';
 
   // --- ESTADOS ---
   const [firmas, setFirmas] = useState<FirmaData[]>([]);
@@ -66,8 +67,7 @@ export default function EmitirCertificadoPage() {
     }
   };
 
- const handleImprimir = () => {
-    // Un pequeño retraso de 100ms asegura que la página esté lista
+  const handleImprimir = () => {
     setTimeout(() => {
       window.print();
     }, 100);
@@ -90,12 +90,13 @@ export default function EmitirCertificadoPage() {
     setIsSubmitting(true);
 
     try {
+      // Como ahora son varias firmas, puedes enviar el array o el string completo a tu backend
       const response = await fetch('/api/tramites/finalizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tramiteId: tramiteId,
-          firmaId: firmaIdURL,
+          firmasIds: firmasIdsURL, // Cambiado a firmasIds
           usuarioOperadorId: 4 
         }),
       });
@@ -131,7 +132,15 @@ export default function EmitirCertificadoPage() {
     }
   };
 
-  const firmaActual = firmas.find(f => f.id_usuario.toString() === firmaIdURL);
+  // --- PROCESAMIENTO DE FIRMAS MÚLTIPLES ---
+  // Convertimos el string "1,3" en un arreglo de IDs, y filtramos las firmas correspondientes
+  const arrayIds = firmasIdsURL.split(',').filter(id => id.trim() !== '');
+  const firmasActuales = firmas.filter(f => arrayIds.includes(f.id_usuario.toString()));
+  
+  // Creamos un string con los nombres de todas las autoridades ("Juan Perez, Maria Lopez")
+  const nombresFirmantes = firmasActuales.length > 0 
+    ? firmasActuales.map(f => f.nombre_completo).join(', ') 
+    : "Pendiente de asignación";
 
   const codigoSeguridad = datosTramite ? `J5SH5CF${datosTramite.id_tramite}` : '';
 
@@ -208,7 +217,8 @@ export default function EmitirCertificadoPage() {
                   <tr>
                     <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">Firmado por:</td>
                     <td className="border border-gray-200 p-4 text-center text-gray-700">
-                      {firmaActual ? firmaActual.nombre_completo : "Pendiente de asignación"}
+                      {/* Aquí se muestran todos los nombres concatenados */}
+                      {nombresFirmantes}
                     </td>
                   </tr>
                   <tr>
@@ -233,10 +243,24 @@ export default function EmitirCertificadoPage() {
               </table>
             </div>
 
+            {/* RENDERIZADO VISUAL DE LAS FIRMAS */}
+            {firmasActuales.length > 0 && (
+              <div className="flex justify-center items-end gap-12 mt-8 mb-4">
+                {firmasActuales.map((firma) => (
+                  <div key={firma.id_usuario} className="flex flex-col items-center">
+                    <img src={firma.firma_digital_url} alt="Firma" className="h-16 object-contain mix-blend-multiply" />
+                    <div className="border-t border-gray-800 w-40 mt-1 text-center text-[10px] text-gray-600 pt-1 font-bold uppercase leading-tight">
+                      {firma.nombre_completo}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Footer del certificado (Texto + QR) */}
             <div className="flex justify-between items-center mt-6">
               <p className="text-xs text-gray-500 max-w-[60%] text-justify leading-relaxed">
-                Se certifica que la firma que antecede corresponde al funcionario autorizado y que el presente documento tiene plena validez legal conforme a la normativa vigente.
+                Se certifica que {firmasActuales.length > 1 ? "las firmas que anteceden corresponden a los funcionarios autorizados" : "la firma que antecede corresponde al funcionario autorizado"} y que el presente documento tiene plena validez legal conforme a la normativa vigente.
               </p>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 w-28 h-28 flex flex-col items-center justify-center text-gray-400 bg-gray-50 print:bg-transparent print:border-solid print:border-gray-400">
                 <span className="material-symbols-outlined text-4xl mb-1">qr_code_2</span>

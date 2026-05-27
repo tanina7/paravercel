@@ -4,7 +4,9 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tramiteId, firmaId, usuarioOperadorId } = body;
+    
+    // 🔥 AQUÍ ESTÁ EL CAMBIO: Recibimos 'firmasIds' en plural para que coincida con el frontend
+    const { tramiteId, firmasIds, usuarioOperadorId } = body;
 
     // 1. Actualizar la tabla 'tramites' al estado 'Completado'
     await pool.query(`
@@ -29,16 +31,17 @@ export async function POST(request: Request) {
       `, [idSolicitud]);
     }
 
-    // 4. Registrar la acción en el historial dejando constancia de la firma utilizada
+    // 4. Registrar la acción en el historial dejando constancia de las firmas utilizadas
+    // Si firmasIds viene vacío por alguna razón, usamos 'null' explícito para que MySQL no lance error
     await pool.query(`
       INSERT INTO historial_tramite (id_tramite, id_estado, id_usuario, comentario) 
       VALUES (
         ?, 
         (SELECT id_estado FROM estados_tramite WHERE nombre_estado = 'Completado' LIMIT 1), 
         ?, 
-        CONCAT('Certificado emitido. Firma autorizada ID: ', ?)
+        CONCAT('Certificado emitido. Firmas autorizadas IDs: ', ?)
       )
-    `, [tramiteId, usuarioOperadorId, firmaId]);
+    `, [tramiteId, usuarioOperadorId || null, firmasIds || 'Ninguna']);
 
     return NextResponse.json({ success: true, message: "Trámite finalizado con éxito." });
 

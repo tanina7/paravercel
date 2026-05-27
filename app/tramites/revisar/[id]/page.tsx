@@ -29,7 +29,8 @@ export default function RevisarTramitePage() {
 
   // --- ESTADOS ---
   const [firmas, setFirmas] = useState<FirmaData[]>([]);
-  const [firmaSeleccionada, setFirmaSeleccionada] = useState<string>('');
+  // AHORA ES UN ARREGLO PARA MULTIPLES FIRMAS
+  const [firmasSeleccionadas, setFirmasSeleccionadas] = useState<string[]>([]);
   const [archivoPDF, setArchivoPDF] = useState<File | null>(null);
   const [datosTramite, setDatosTramite] = useState<TramiteData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,12 +64,21 @@ export default function RevisarTramitePage() {
     }
   };
 
+  // Función para seleccionar/deseleccionar firmas
+  const toggleFirma = (id: string) => {
+    setFirmasSeleccionadas((prev) => 
+      prev.includes(id) 
+        ? prev.filter(firmaId => firmaId !== id) // Si ya está, la quita
+        : [...prev, id] // Si no está, la agrega
+    );
+  };
+
   const handleGenerarCertificado = () => {
-    if (!firmaSeleccionada) {
-      // Mensaje de validación estilizado con SweetAlert2
+    // VALIDACIÓN: Si el arreglo está vacío, no pasa
+    if (firmasSeleccionadas.length === 0) {
       Swal.fire({
-        title: 'Firma Requerida',
-        text: 'Por favor, selecciona una autoridad firmante antes de generar el certificado.',
+        title: 'Firmas Requeridas',
+        text: 'Por favor, selecciona al menos una autoridad firmante antes de generar el certificado.',
         icon: 'warning',
         confirmButtonColor: '#8B1A1A',
         confirmButtonText: 'Entendido',
@@ -79,10 +89,12 @@ export default function RevisarTramitePage() {
       });
       return;
     }
-    router.push(`/tramites/emitir/${tramiteId}?firmaId=${firmaSeleccionada}`);
+    // Pasamos todas las firmas separadas por comas en la URL
+    router.push(`/tramites/emitir/${tramiteId}?firmasIds=${firmasSeleccionadas.join(',')}`);
   };
 
-  const firmaActual = firmas.find(f => f.id_usuario.toString() === firmaSeleccionada);
+  // Filtramos todas las firmas que coincidan con las seleccionadas
+  const firmasActuales = firmas.filter(f => firmasSeleccionadas.includes(f.id_usuario.toString()));
 
   // --- RENDERIZADO CONDICIONAL ---
   if (loading) {
@@ -133,12 +145,17 @@ export default function RevisarTramitePage() {
                 <p><span className="text-gray-500 mr-2 font-semibold">Correo:</span> {datosTramite.correo}</p>
                 <p><span className="text-gray-500 mr-2 font-semibold">Trámite:</span> {datosTramite.tipo_tramite}</p>
                 
-                {firmaActual && (
-                  <div className="absolute bottom-12 left-0 right-0 flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                    <img src={firmaActual.firma_digital_url} alt="Firma" className="h-20 object-contain mix-blend-multiply" />
-                    <div className="border-t border-gray-400 w-48 mt-2 text-center text-xs text-gray-500 pt-1 font-medium">
-                      {firmaActual.nombre_completo}
-                    </div>
+                {/* RENDERIZADO DE MÚLTIPLES FIRMAS EN EL DOCUMENTO */}
+                {firmasActuales.length > 0 && (
+                  <div className="absolute bottom-12 left-0 right-0 flex justify-center items-end gap-8 flex-wrap px-8 animate-in fade-in zoom-in duration-300">
+                    {firmasActuales.map((firma) => (
+                      <div key={firma.id_usuario} className="flex flex-col items-center">
+                        <img src={firma.firma_digital_url} alt="Firma" className="h-16 object-contain mix-blend-multiply" />
+                        <div className="border-t border-gray-400 w-32 mt-2 text-center text-[10px] text-gray-500 pt-1 font-medium leading-tight">
+                          {firma.nombre_completo}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -169,48 +186,56 @@ export default function RevisarTramitePage() {
             </div>
           </div>
 
-          {/* Tarjeta Selector de Firmas Mejorado */}
+          {/* Tarjeta Selector de Firmas (MULTISELECCIÓN) */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">draw</span> Autoridad Firmante
-            </h3>
-            <p className="text-xs text-gray-500 mb-4">Seleccione la autoridad responsable de firmar este documento:</p>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">draw</span> Autoridades Firmantes
+              </h3>
+              <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded">
+                {firmasSeleccionadas.length} seleccionadas
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Puede seleccionar una o más autoridades para este documento:</p>
             
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-              {firmas.map((firma) => (
-                <div 
-                  key={firma.id_usuario}
-                  onClick={() => setFirmaSeleccionada(firma.id_usuario.toString())}
-                  className={`relative flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                    firmaSeleccionada === firma.id_usuario.toString() 
-                      ? 'border-[#8B1A1A] bg-red-50/30 shadow-sm' 
-                      : 'border-gray-100 hover:border-gray-300 bg-gray-50/50 hover:bg-gray-50'
-                  }`}
-                >
-                  {/* Radio button visual */}
-                  <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
-                    firmaSeleccionada === firma.id_usuario.toString() ? 'border-[#8B1A1A]' : 'border-gray-300'
-                  }`}>
-                    {firmaSeleccionada === firma.id_usuario.toString() && (
-                      <div className="w-2 h-2 rounded-full bg-[#8B1A1A]" />
-                    )}
-                  </div>
-                  
-                  {/* Info de la firma */}
-                  <div className="flex-1 min-w-0 flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-sm text-gray-800 truncate">{firma.nombre_completo}</p>
-                      <p className="text-[10px] text-gray-500 uppercase font-medium mt-0.5">Autorizado</p>
+              {firmas.map((firma) => {
+                const isSelected = firmasSeleccionadas.includes(firma.id_usuario.toString());
+                
+                return (
+                  <div 
+                    key={firma.id_usuario}
+                    onClick={() => toggleFirma(firma.id_usuario.toString())}
+                    className={`relative flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                      isSelected 
+                        ? 'border-[#8B1A1A] bg-red-50/30 shadow-sm' 
+                        : 'border-gray-100 hover:border-gray-300 bg-gray-50/50 hover:bg-gray-50'
+                    }`}
+                  >
+                    {/* Checkbox visual en lugar de Radio Button */}
+                    <div className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-colors border-2 ${
+                      isSelected ? 'border-[#8B1A1A] bg-[#8B1A1A]' : 'border-gray-300 bg-white'
+                    }`}>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-white text-[14px] font-bold">check</span>
+                      )}
                     </div>
-                    {/* Miniatura de la firma */}
-                    <img 
-                      src={firma.firma_digital_url} 
-                      alt="Firma miniatura" 
-                      className="h-8 w-16 object-contain mix-blend-multiply opacity-60" 
-                    />
+                    
+                    {/* Info de la firma */}
+                    <div className="flex-1 min-w-0 flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-sm text-gray-800 truncate">{firma.nombre_completo}</p>
+                        <p className="text-[10px] text-gray-500 uppercase font-medium mt-0.5">Autorizado</p>
+                      </div>
+                      <img 
+                        src={firma.firma_digital_url} 
+                        alt="Firma miniatura" 
+                        className={`h-8 w-16 object-contain mix-blend-multiply transition-opacity ${isSelected ? 'opacity-100' : 'opacity-40'}`} 
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             {firmas.length === 0 && (

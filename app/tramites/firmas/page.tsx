@@ -16,10 +16,9 @@ export default function CrearFirmaPage() {
   
   const [loading, setLoading] = useState(false);
   
-  // Estado para nuestro "Mensaje Bonito" (Notificación flotante)
+  // Estado para nuestro "Mensaje Bonito"
   const [notificacion, setNotificacion] = useState({ mostrar: false, tipo: '', mensaje: '' });
 
-  // Función para mostrar la notificación y ocultarla a los 4 segundos
   const mostrarNotificacion = (tipo: 'exito' | 'error', mensaje: string) => {
     setNotificacion({ mostrar: true, tipo, mensaje });
     setTimeout(() => {
@@ -59,7 +58,10 @@ export default function CrearFirmaPage() {
     formData.append('rol', rol);
     formData.append('foto', archivoFoto);
     formData.append('firma', archivoFirma);
-    formData.append('id_usuario', '1'); // Mantenemos el ID de prueba para que no falle tu API
+    
+    // 🔥 SOLUCIÓN DEL BUG: 
+    // Eliminamos el id_usuario hardcodeado. 
+    // Ahora el backend debe hacer un INSERT y la BD le dará un ID nuevo automático.
 
     try {
       const response = await fetch('/api/guardar-firma', {
@@ -68,7 +70,6 @@ export default function CrearFirmaPage() {
       });
 
       if (response.ok) {
-        // Mensaje de éxito bonito
         mostrarNotificacion('exito', '¡Identidad y firma digital registradas correctamente!');
         
         // Limpiamos el formulario
@@ -80,7 +81,9 @@ export default function CrearFirmaPage() {
         setArchivoFoto(null);
         setArchivoFirma(null);
       } else {
-        mostrarNotificacion('error', 'Hubo un problema al guardar en la base de datos.');
+        const errorData = await response.json();
+        // Mostrar mensaje específico si el backend rechaza un segundo Rector
+        mostrarNotificacion('error', errorData.error || 'Hubo un problema al guardar en la base de datos.');
       }
     } catch (error) {
       mostrarNotificacion('error', 'Error de conexión con el servidor.');
@@ -92,7 +95,7 @@ export default function CrearFirmaPage() {
   return (
     <div className="max-w-6xl mx-auto animate-in fade-in duration-500 space-y-8 relative pb-12">
       
-      {/* --- NOTIFICACIÓN FLOTANTE BONITA --- */}
+      {/* --- NOTIFICACIÓN FLOTANTE --- */}
       {notificacion.mostrar && (
         <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl transition-all animate-in slide-in-from-top-8 ${
           notificacion.tipo === 'exito' ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-[#8B1A1A]'
@@ -152,8 +155,7 @@ export default function CrearFirmaPage() {
                 <option value="Estudiante">Estudiante</option>
                 <option value="Director de Carrera">Director de Carrera</option>
                 <option value="Vicerrector Académico">Vicerrector Académico</option>
-                <option value="Rector">Rector</option>
-                <option value="Operador Central">Operador Central</option>
+                <option value="Rector">Rector (Cargo Único)</option>
               </select>
               <span className="material-symbols-outlined absolute right-3 top-3.5 text-gray-400 pointer-events-none">expand_more</span>
             </div>

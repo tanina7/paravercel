@@ -5,31 +5,44 @@ import type { NextRequest } from 'next/server';
 export const AUTH_COOKIE_NAME = 'auth-token';
 const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
+type RoleName = 'STUDENT' | 'CASHIER' | 'LIBRARIAN' | 'ADMIN';
+
 type SessionClaims = {
   id: number;
   email: string;
   username: string;
   firstName: string;
   lastName: string;
-  role_id: number;
+
+  role: RoleName;   // 🔥 CAMBIO CLAVE
+
   permissions: string[];
+  db?: string;
 };
 
 function getAuthSecret() {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'dev-auth-secret-change-me';
+  const secret =
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    'dev-auth-secret-change-me';
+
   return new TextEncoder().encode(secret);
 }
 
-function normalizeClaims(payload: Record<string, unknown>): SessionClaims | null {
+function normalizeClaims(
+  payload: Record<string, unknown>
+): SessionClaims | null {
   const id = Number(payload.id ?? 0);
-  const roleId = Number(payload.role_id ?? 0);
   const email = String(payload.email ?? '');
   const username = String(payload.username ?? '');
+
+  const role = String(payload.role ?? '').toUpperCase() as RoleName;
+
   const permissions = Array.isArray(payload.permissions)
-    ? payload.permissions.map((permission) => String(permission || '').trim()).filter(Boolean)
+    ? payload.permissions.map((p) => String(p || '').trim()).filter(Boolean)
     : [];
 
-  if (!id || !email || !username) {
+  if (!id || !email || !username || !role) {
     return null;
   }
 
@@ -39,8 +52,9 @@ function normalizeClaims(payload: Record<string, unknown>): SessionClaims | null
     username,
     firstName: String(payload.firstName ?? ''),
     lastName: String(payload.lastName ?? ''),
-    role_id: roleId,
+    role, // 🔥 ahora es string
     permissions,
+    db: payload.db ? String(payload.db) : undefined,
   };
 }
 
@@ -52,7 +66,9 @@ export async function createSessionToken(claims: SessionClaims) {
     .sign(getAuthSecret());
 }
 
-export async function verifySessionToken(token: string): Promise<SessionClaims | null> {
+export async function verifySessionToken(
+  token: string
+): Promise<SessionClaims | null> {
   try {
     const { payload } = await jwtVerify(token, getAuthSecret());
     return normalizeClaims(payload);
@@ -61,11 +77,11 @@ export async function verifySessionToken(token: string): Promise<SessionClaims |
   }
 }
 
-export async function readSessionFromRequest(request: NextRequest): Promise<SessionClaims | null> {
+export async function readSessionFromRequest(
+  request: NextRequest
+): Promise<SessionClaims | null> {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   return verifySessionToken(token);
 }

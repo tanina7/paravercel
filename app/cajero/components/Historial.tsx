@@ -11,18 +11,29 @@ type Historial = {
   fecha: string;
 };
 
-export default function Historial({ endpoint }: { endpoint: string }) {
+export default function Historial({
+  endpoint
+}: {
+  endpoint: string;
+}) {
+
   const [data, setData] = useState<Historial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
+
     try {
+
       setLoading(true);
       setError('');
 
       const res = await fetch(endpoint);
-      if (!res.ok) throw new Error('Error al cargar historial');
+
+      if (!res.ok) {
+        throw new Error('Error al cargar historial');
+      }
 
       const json = await res.json();
 
@@ -31,10 +42,15 @@ export default function Historial({ endpoint }: { endpoint: string }) {
         : json.data || json.rows || json.result || [];
 
       setData(result);
+
     } catch (err: any) {
+
       setError(err.message || 'Error desconocido');
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
@@ -42,102 +58,261 @@ export default function Historial({ endpoint }: { endpoint: string }) {
     fetchData();
   }, [endpoint]);
 
+  // FILTRO
+  const filteredData = data.filter((item) => {
+
+    const term = search.toLowerCase();
+
+    return (
+      item.nombre_completo?.toLowerCase().includes(term) ||
+      item.correo?.toLowerCase().includes(term) ||
+      item.nombre_estado?.toLowerCase().includes(term) ||
+      item.comentario?.toLowerCase().includes(term) ||
+      String(item.id_tramite).includes(term)
+    );
+  });
+
   if (loading) {
-    return <p className="p-4 text-gray-600">Cargando historial...</p>;
+    return (
+      <p className="p-4 text-gray-700">
+        Cargando historial...
+      </p>
+    );
   }
 
   if (error) {
+
     return (
+
       <div className="p-4">
-        <p className="text-red-600 font-semibold">{error}</p>
+
+        <p className="text-red-600 font-semibold">
+          {error}
+        </p>
+
         <button
           onClick={fetchData}
           className="bg-red-600 text-white px-3 py-1 rounded mt-2"
         >
           Reintentar
         </button>
+
       </div>
+
     );
   }
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow">
 
-      {/* HEADER igual al Historial2 */}
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">
-        Historial de Trámites
-      </h1>
+    <div className="bg-white text-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100">
 
-      <div className="overflow-x-auto">
-        <table className="w-full rounded-lg overflow-hidden">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
 
-          {/* HEADER estilo Historial2 */}
+        <div>
+
+          <h1 className="text-2xl font-bold text-gray-900">
+            Historial de Cajero
+          </h1>
+
+          <p className="text-sm text-gray-500 mt-1">
+            Consulta los movimientos registrados en el sistema
+          </p>
+
+        </div>
+
+        {/* BUSCADOR */}
+        <div className="relative w-full md:w-96">
+
+          {/* ICONO */}
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+
+          </div>
+
+          <input
+            type="text"
+            value={search}
+            placeholder="Buscar por nombre, estado o ID..."
+            onChange={(e) => setSearch(e.target.value)}
+            className="
+              w-full
+              pl-10
+              pr-10
+              py-3
+              rounded-xl
+              border
+              border-gray-300
+              bg-gray-50
+              text-sm
+              text-gray-800
+              placeholder-gray-400
+              shadow-sm
+              transition-all
+              duration-200
+              focus:outline-none
+              focus:ring-2
+              focus:ring-red-800
+              focus:border-red-800
+              focus:bg-white
+            "
+          />
+
+          {/* LIMPIAR */}
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="
+                absolute
+                inset-y-0
+                right-0
+                flex
+                items-center
+                pr-3
+                text-gray-400
+                hover:text-gray-600
+              "
+            >
+              ✕
+            </button>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* TABLA */}
+      <div className="overflow-x-auto rounded-xl border border-gray-200">
+
+        <table className="w-full text-gray-800">
+
+          {/* HEADER */}
           <thead className="bg-red-900 text-white">
+
             <tr>
-              <th className="p-3 text-left">ID Trámite</th>
-              <th className="p-3 text-left">Nombre</th>
-              <th className="p-3 text-left">Correo</th>
-              <th className="p-3 text-left">Estado</th>
-              <th className="p-3 text-left">Comentario</th>
-              <th className="p-3 text-left">Fecha</th>
+
+              <th className="p-4 text-left">
+                ID
+              </th>
+
+              <th className="p-4 text-left">
+                Nombre
+              </th>
+
+              <th className="p-4 text-left">
+                Correo
+              </th>
+
+              <th className="p-4 text-left">
+                Estado
+              </th>
+
+              <th className="p-4 text-left">
+                Comentario
+              </th>
+
+              <th className="p-4 text-left">
+                Fecha
+              </th>
+
             </tr>
+
           </thead>
 
-          {/* BODY estilo Historial2 */}
-          <tbody className="divide-y divide-gray-200 text-gray-800">
+          {/* BODY */}
+          <tbody className="divide-y divide-gray-100 bg-white text-gray-800">
 
-            {data.length > 0 ? (
-              data.map((item, index) => (
+            {filteredData.length > 0 ? (
+
+              filteredData.map((item, index) => (
+
                 <tr
                   key={`${item.id_tramite}-${index}`}
-                  className="hover:bg-gray-50 transition"
+                  className="hover:bg-gray-50 transition-colors"
                 >
-                  <td className="p-3 font-medium">
+
+                  <td className="p-4 font-semibold text-gray-900">
                     #{item.id_tramite}
                   </td>
 
-                  <td className="p-3">
+                  <td className="p-4 text-gray-800">
                     {item.nombre_completo}
                   </td>
 
-                  <td className="p-3 text-gray-600">
+                  <td className="p-4 text-gray-700">
                     {item.correo}
                   </td>
 
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      item.nombre_estado === 'Pagado'
-                        ? 'bg-green-100 text-green-800'
-                        : item.nombre_estado === 'Rechazado'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
+                  <td className="p-4">
+
+                    <span
+                      className={`
+                        px-3
+                        py-1
+                        rounded-full
+                        text-xs
+                        font-semibold
+                        ${
+                          item.nombre_estado === 'Pagado'
+                            ? 'bg-green-100 text-green-800'
+                            : item.nombre_estado === 'Rechazado'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }
+                      `}
+                    >
                       {item.nombre_estado}
                     </span>
+
                   </td>
 
-                  <td className="p-3 text-gray-600 italic">
+                  <td className="p-4 text-gray-600 italic">
                     {item.comentario || 'Sin observaciones'}
                   </td>
 
-                  <td className="p-3 text-sm text-gray-500">
+                  <td className="p-4 text-sm text-gray-500">
                     {new Date(item.fecha).toLocaleString('es-BO')}
                   </td>
 
                 </tr>
+
               ))
+
             ) : (
+
               <tr>
-                <td colSpan={6} className="text-center p-6 text-gray-500">
-                  No hay historial disponible
+
+                <td
+                  colSpan={6}
+                  className="text-center py-10 text-gray-500"
+                >
+                  No se encontraron resultados
                 </td>
+
               </tr>
+
             )}
 
           </tbody>
 
         </table>
+
       </div>
+
     </div>
   );
 }

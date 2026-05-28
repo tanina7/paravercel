@@ -72,6 +72,10 @@ export default function EmitirCertificadoPage() {
       window.print();
     }, 100);
   };
+  const sanitizeStyles = () => {
+    // Esta función ya no se usa, pero la dejamos por compatibilidad
+    return () => {};
+  };
 
   const handleFinalizar = async () => {
     const result = await Swal.fire({
@@ -90,40 +94,167 @@ export default function EmitirCertificadoPage() {
     setIsSubmitting(true);
 
     try {
-      // Como ahora son varias firmas, puedes enviar el array o el string completo a tu backend
-      const response = await fetch('/api/tramites/finalizar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tramiteId: tramiteId,
-          firmasIds: firmasIdsURL, // Cambiado a firmasIds
-          usuarioOperadorId: 4 
-        }),
+      // 1. Cargar librerías necesarias desde CDN
+      const html2canvas = await new Promise<any>((resolve, reject) => {
+        if ((window as any).html2canvas) {
+          resolve((window as any).html2canvas);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        script.onload = () => resolve((window as any).html2canvas);
+        script.onerror = () => reject(new Error('No se pudo cargar html2canvas'));
+        document.body.appendChild(script);
       });
 
-      const data = await response.json();
+      const jsPDF = await new Promise<any>((resolve, reject) => {
+        if ((window as any).jspdf && (window as any).jspdf.jsPDF) {
+          resolve((window as any).jspdf.jsPDF);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        script.onload = () => resolve((window as any).jspdf.jsPDF);
+        script.onerror = () => reject(new Error('No se pudo cargar jsPDF'));
+        document.body.appendChild(script);
+      });
 
-      if (data.success) {
-        await Swal.fire({
-          title: '¡Emitido!',
-          text: 'El certificado ha sido generado exitosamente.',
-          icon: 'success',
-          confirmButtonColor: '#8B1A1A'
-        });
-        router.push('/tramites/transacciones'); 
-      } else {
-        Swal.fire({
-          title: 'Error',
-          text: data.error || 'Hubo un error al emitir el certificado.',
-          icon: 'error',
-          confirmButtonColor: '#8B1A1A'
-        });
+      // 2. Obtener el elemento original
+      const originalElement = document.getElementById('certificado-pantalla');
+      if (!originalElement) {
+        throw new Error('No se encontró el contenedor del certificado.');
       }
-    } catch (error) {
+
+      // 3. CREAR UN CLON LIMPIO SIN CLASES DE TAILWIND
+      const cleanElement = originalElement.cloneNode(true) as HTMLElement;
+      
+      // Limpiar todas las clases de Tailwind y aplicar estilos básicos inline
+      const cleanupElement = (el: Element) => {
+        // Remover todas las clases
+        el.className = '';
+        
+        // Aplicar estilos básicos inline para estructura
+        if (el instanceof HTMLElement) {
+          el.style.fontFamily = 'Arial, sans-serif';
+          el.style.color = '#000';
+          el.style.backgroundColor = '#fff';
+          el.style.margin = '0';
+          el.style.padding = el.tagName === 'TABLE' ? '0' : el.style.padding;
+        }
+        
+        // Procesar todos los hijos recursivamente
+        for (let i = 0; i < el.children.length; i++) {
+          cleanupElement(el.children[i]);
+        }
+      };
+
+      // Limpiar el clon
+      cleanupElement(cleanElement);
+
+      // 4. Crear un contenedor temporal invisible
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '210mm';
+      tempContainer.style.backgroundColor = '#fff';
+      tempContainer.style.padding = '10mm';
+      tempContainer.appendChild(cleanElement);
+      document.body.appendChild(tempContainer);
+
+      try {
+        // 5. Capturar el clon limpio como imagen
+        const canvas = await html2canvas(cleanElement, {
+          scale: 3,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          windowHeight: cleanElement.scrollHeight,
+          windowWidth: 900,
+          letterRendering: true
+        });
+
+        // 6. Convertir canvas a imagen
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+        // 7. Crear PDF usando jsPDF
+        const pageWidth = 210; // mm (A4)
+        const pageHeight = 297; // mm (A4)
+        
+        // Calcular altura proporcional
+        const imgWidth = pageWidth - 10;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        let heightLeft = imgHeight;
+        let position = 5;
+
+        pdf.addImage(imgData, 'JPEG', 5, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 5, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // 8. Convertir PDF a Blob
+        const pdfBlob = pdf.output('blob');
+        const pdfFile = new File([pdfBlob], `certificado_${tramiteId}.pdf`, { type: 'application/pdf' });
+
+        // 9. Preparar FormData para el backend
+        const formData = new FormData();
+        formData.append('tramiteId', tramiteId as string);
+        formData.append('firmasIds', firmasIdsURL);
+        formData.append('usuarioOperadorId', '4');
+        formData.append('archivo', pdfFile);
+
+        if (archivoPDF) {
+          formData.append('respaldo', archivoPDF);
+        }
+
+        // 10. Enviar al servidor
+        const response = await fetch('/api/tramites/finalizar', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          await Swal.fire({
+            title: '¡Emitido!',
+            text: 'El certificado ha sido generado y guardado exitosamente.',
+            icon: 'success',
+            confirmButtonColor: '#8B1A1A'
+          });
+          router.push('/tramites/transacciones');
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: data.error || 'Hubo un error al emitir el certificado.',
+            icon: 'error',
+            confirmButtonColor: '#8B1A1A'
+          });
+        }
+      } finally {
+        // Limpiar el elemento temporal
+        if (tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer);
+        }
+      }
+    } catch (error: any) {
       console.error("Error:", error);
       Swal.fire({
-        title: 'Error de conexión',
-        text: 'No se pudo comunicar con el servidor.',
+        title: 'Error al generar el certificado',
+        text: error.message || 'No se pudo generar o enviar el archivo del certificado.',
         icon: 'error',
         confirmButtonColor: '#8B1A1A'
       });
@@ -185,59 +316,59 @@ export default function EmitirCertificadoPage() {
         <div className="lg:col-span-2 flex flex-col items-center print:w-full">
           
           {/* Tarjeta del Certificado (Se expande al 100% al imprimir) */}
-          <div className="bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-100 p-10 relative print:border-none print:shadow-none print:p-4">
+          <div id="certificado-pantalla" className="bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-100 p-10 relative print:border-none print:shadow-none print:p-4">
             
             <div className="text-center mb-8">
-              <p className="text-xs text-gray-500 mb-4">Resolución Ministerial N° 0068/2023 de 15 de marzo de 2023</p>
-              <h1 className="text-2xl font-black text-gray-800 uppercase tracking-widest border-b border-gray-800 pb-2 inline-block">
+              <p className="text-sm text-gray-600 mb-4 font-medium">Resolución Ministerial N° 0068/2023 de 15 de marzo de 2023</p>
+              <h1 className="text-3xl font-black text-gray-800 uppercase tracking-widest border-b-2 border-gray-800 pb-3 inline-block">
                 {datosTramite.tipo_tramite}
               </h1>
             </div>
 
-            <div className="border border-gray-200 p-4 rounded-md mb-6 bg-gray-50/50 print:bg-transparent">
-              <p className="text-sm text-gray-600">
+            <div className="border border-gray-300 p-4 rounded-md mb-6 bg-gray-50/50 print:bg-transparent">
+              <p className="text-base text-gray-700 leading-relaxed font-medium">
                 El Ministerio de Educación del Estado Plurinacional de Bolivia, a través de la Dirección General de Educación Superior Universitaria, certifica a favor de:
               </p>
             </div>
 
-            <div className="bg-[#eaf4ff] py-4 px-4 rounded-md mb-8 text-center border border-blue-100 print:bg-gray-100 print:border-gray-300">
-              <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">
+            <div className="bg-[#eaf4ff] py-5 px-4 rounded-md mb-8 text-center border-2 border-blue-200 print:bg-gray-100 print:border-gray-400">
+              <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
                 {datosTramite.nombre_completo}
               </h2>
             </div>
 
             {/* Tabla de Detalles */}
             <div className="mb-8">
-              <table className="w-full text-sm text-left border-collapse border border-gray-200">
+              <table className="w-full text-base text-left border-collapse border-2 border-gray-400">
                 <tbody>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 w-2/5 text-center bg-gray-50">Detalle del documento:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700">{datosTramite.tipo_tramite}</td>
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 w-2/5 text-center bg-gray-200">Detalle del documento:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-medium">{datosTramite.tipo_tramite}</td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">Firmado por:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700">
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 text-center bg-gray-200">Firmado por:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-medium">
                       {/* Aquí se muestran todos los nombres concatenados */}
                       {nombresFirmantes}
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">Fecha:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700">
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 text-center bg-gray-200">Fecha:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-medium">
                       {new Date(datosTramite.fecha_creacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">Responsable:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700">UNIVALLE</td>
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 text-center bg-gray-200">Responsable:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-medium">UNIVALLE</td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">N° de certificado:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700">{datosTramite.codigo_tramite}</td>
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 text-center bg-gray-200">N° de certificado:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-medium">{datosTramite.codigo_tramite}</td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-200 p-4 font-semibold text-gray-700 text-center bg-gray-50">Código de seguridad:</td>
-                    <td className="border border-gray-200 p-4 text-center text-gray-700 font-mono bg-gray-50">{codigoSeguridad}</td>
+                    <td className="border-2 border-gray-400 p-3 font-bold text-gray-800 text-center bg-gray-200">Código de seguridad:</td>
+                    <td className="border-2 border-gray-400 p-3 text-center text-gray-800 font-mono bg-gray-100 font-bold">{codigoSeguridad}</td>
                   </tr>
                 </tbody>
               </table>
@@ -245,11 +376,11 @@ export default function EmitirCertificadoPage() {
 
             {/* RENDERIZADO VISUAL DE LAS FIRMAS */}
             {firmasActuales.length > 0 && (
-              <div className="flex justify-center items-end gap-12 mt-8 mb-4">
+              <div className="flex justify-center items-end gap-10 mt-12 mb-6">
                 {firmasActuales.map((firma) => (
                   <div key={firma.id_usuario} className="flex flex-col items-center">
-                    <img src={firma.firma_digital_url} alt="Firma" className="h-16 object-contain mix-blend-multiply" />
-                    <div className="border-t border-gray-800 w-40 mt-1 text-center text-[10px] text-gray-600 pt-1 font-bold uppercase leading-tight">
+                    <img src={firma.firma_digital_url} alt="Firma" className="h-12 object-contain mix-blend-multiply" />
+                    <div className="border-t-2 border-gray-900 w-44 mt-2 text-center text-sm text-gray-700 pt-2 font-bold uppercase leading-tight">
                       {firma.nombre_completo}
                     </div>
                   </div>
@@ -258,13 +389,13 @@ export default function EmitirCertificadoPage() {
             )}
 
             {/* Footer del certificado (Texto + QR) */}
-            <div className="flex justify-between items-center mt-6">
-              <p className="text-xs text-gray-500 max-w-[60%] text-justify leading-relaxed">
+            <div className="flex justify-between items-center mt-8 gap-4">
+              <p className="text-sm text-gray-700 max-w-[65%] text-justify leading-relaxed font-medium">
                 Se certifica que {firmasActuales.length > 1 ? "las firmas que anteceden corresponden a los funcionarios autorizados" : "la firma que antecede corresponde al funcionario autorizado"} y que el presente documento tiene plena validez legal conforme a la normativa vigente.
               </p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 w-28 h-28 flex flex-col items-center justify-center text-gray-400 bg-gray-50 print:bg-transparent print:border-solid print:border-gray-400">
-                <span className="material-symbols-outlined text-4xl mb-1">qr_code_2</span>
-                <span className="text-[9px] text-center leading-tight">Escanee el código QR para verificar</span>
+              <div className="border-2 border-solid border-gray-500 rounded-lg p-2 w-24 h-24 flex flex-col items-center justify-center text-gray-600 bg-white print:bg-white print:border-solid print:border-gray-600">
+                <span className="material-symbols-outlined text-3xl mb-0.5">qr_code_2</span>
+                <span className="text-xs text-center leading-tight font-semibold">Verificar</span>
               </div>
             </div>
             

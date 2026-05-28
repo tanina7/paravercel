@@ -136,9 +136,10 @@ export default function LandingPage() {
                   <span>Ver trámites</span>
                   <span className="text-xl">→</span>
                 </Link>
-                <button className="px-8 py-3.5 rounded-lg font-semibold border-2 border-white text-white hover:bg-white/10 transition-all duration-300">
-                  Más información
-                </button>
+                <Link href="/usuario/historial" className="px-8 py-3.5 rounded-lg font-semibold border-2 border-white text-white hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2">
+                  <span>📋 Mi Historial</span>
+                  <span className="text-xl">→</span>
+                </Link>
               </div>
             </div>
 
@@ -294,12 +295,12 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Enlaces Rápidos</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-[#8B1A1A] transition-colors duration-300">
-                    Mis Trámites
+                  <a href="/usuario/historial" className="hover:text-[#8B1A1A] transition-colors duration-300">
+                    Mi Historial de Trámites
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#8B1A1A] transition-colors duration-300">
+                  <a href="/usuario/historial" className="hover:text-[#8B1A1A] transition-colors duration-300">
                     Consultar Estado
                   </a>
                 </li>

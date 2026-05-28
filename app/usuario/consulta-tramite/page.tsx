@@ -33,6 +33,7 @@ export default function ConsultaTramitePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [descargando, setDescargando] = useState(false);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -73,12 +74,42 @@ export default function ConsultaTramitePage() {
     setTimeout(() => setCopiado(false), 2000);
   };
 
-  const getEstadoConfig = (idEstado: number) => {
-    return estadoConfig[idEstado.toString()] || { 
+  const getEstadoConfig = (idEstado: number | null | undefined) => {
+    const key = idEstado !== null && idEstado !== undefined ? idEstado.toString() : '';
+    return estadoConfig[key] || { 
       label: 'Desconocido', 
       color: 'bg-gray-100 text-gray-800 border-gray-300', 
       icono: '❓' 
     };
+  };
+
+  const handleDescargarCertificado = async () => {
+    if (!tramite) return;
+    
+    setDescargando(true);
+    try {
+      // Usar la nueva ruta de API para certificados
+      const response = await fetch(`/api/certificados/${tramite.codigoTramite}`);
+      
+      if (!response.ok) {
+        throw new Error('No se pudo descargar el certificado');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `certificado_${tramite.codigoTramite}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error al descargar:', err);
+      alert('Error al descargar el certificado. Intenta más tarde.');
+    } finally {
+      setDescargando(false);
+    }
   };
 
   return (
@@ -234,6 +265,20 @@ export default function ConsultaTramitePage() {
 
             {/* Acciones */}
             <div className="flex flex-col sm:flex-row gap-4">
+              {tramite.id_estado === 7 && (
+                <button
+                  onClick={handleDescargarCertificado}
+                  disabled={descargando}
+                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                    descargando
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-lg active:scale-95'
+                  }`}
+                >
+                  <span>{descargando ? '⏳' : '📥'}</span>
+                  {descargando ? 'Descargando...' : 'Descargar Certificado'}
+                </button>
+              )}
               <Link
                 href="/usuario/landing"
                 className="flex-1 px-6 py-3 rounded-lg bg-[#8B1A1A] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"

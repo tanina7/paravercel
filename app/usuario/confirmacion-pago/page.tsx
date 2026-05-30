@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Header from '../components/Header';
 
 interface DatosConfirmacion {
   codigoSolicitud: string;
@@ -67,16 +68,7 @@ export default function ConfirmacionPagoPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-        </nav>
-      </header>
+      <Header />
 
       {/* Success Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-green-600 to-green-700 text-white py-16 sm:py-20">
@@ -120,11 +112,11 @@ export default function ConfirmacionPagoPage() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">Resumen de Solicitud</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Nombre del Estudiante</p>
+                <p className="text-sm text-black">Nombre del Estudiante</p>
                 <p className="text-lg font-semibold text-gray-900">{datos.nombreCompleto}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Monto Pagado</p>
+                <p className="text-sm text-black">Monto Pagado</p>
                 <p className="text-lg font-semibold text-green-600">{datos.totalMonto} Bs</p>
               </div>
             </div>
@@ -144,11 +136,11 @@ export default function ConfirmacionPagoPage() {
                 <div key={idx} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 mb-1">Trámite</p>
+                      <p className="text-sm text-black mb-1">Trámite</p>
                       <p className="text-lg font-semibold text-gray-900">{tramite.nombre}</p>
                     </div>
                     <div className="flex-1 sm:text-right">
-                      <p className="text-sm text-gray-600 mb-1">Código de Seguimiento</p>
+                      <p className="text-sm text-black mb-1">Código de Seguimiento</p>
                       <div className="flex items-center gap-2 justify-start sm:justify-end">
                         <code className="bg-gray-100 px-4 py-2 rounded font-mono font-bold text-[#8B1A1A] text-base break-all">
                           {tramite.codigoTramite}
@@ -163,7 +155,7 @@ export default function ConfirmacionPagoPage() {
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           ) : (
-                            <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-5 h-5 text-black hover:text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M8 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                               <path d="M15 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                               <path d="M3 5a2 2 0 012-2h3.28a1 1 0 00-.684-.949H5a3 3 0 00-3 3v2h3V5zm7.5-2a1 1 0 00-.684.949H11a2 2 0 012 2v2h3V5a3 3 0 00-3-3h-2.5zM13 7H3v8a2 2 0 002 2h8a2 2 0 002-2V7z"></path>
@@ -208,7 +200,7 @@ export default function ConfirmacionPagoPage() {
             </Link>
             <Link
               href="/usuario/landing"
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 text-center"
+              className="px-8 py-3 border-2 border-gray-300 text-black font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 text-center"
             >
               Consultar estado
             </Link>
@@ -218,7 +210,7 @@ export default function ConfirmacionPagoPage() {
 
       {/* Footer */}
       <section className="bg-gray-100 border-t border-gray-200 py-6">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-black">
           <p>¿Necesitas ayuda? Contáctanos a <span className="font-semibold">tramites@univalle.edu</span></p>
         </div>
       </section>

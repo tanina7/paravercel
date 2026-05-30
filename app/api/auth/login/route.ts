@@ -15,6 +15,8 @@ function normalizeRole(roleId: number): RoleName {
       return 'LIBRARIAN';
     case 1:
       return 'ADMIN';
+    case 4:
+      return 'ADMIN';
     default:
       return 'STUDENT';
   }

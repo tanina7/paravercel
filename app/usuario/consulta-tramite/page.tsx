@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Header from '../components/Header';
 
 interface EstadoTramite {
   id_tramite: number;
@@ -115,16 +116,7 @@ export default function ConsultaTramitePage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/usuario/landing" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-        </nav>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
@@ -135,7 +127,7 @@ export default function ConsultaTramitePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <p className="text-gray-600 font-medium">Cargando información del trámite...</p>
+            <p className="text-black font-medium">Cargando información del trámite...</p>
           </div>
         ) : error ? (
           <div className="space-y-6">
@@ -154,7 +146,7 @@ export default function ConsultaTramitePage() {
                     </Link>
                     <Link 
                       href="/usuario/SeleccionTramites"
-                      className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 transition-colors text-center"
+                      className="px-6 py-2 rounded-lg bg-gray-200 text-black font-semibold hover:bg-gray-300 transition-colors text-center"
                     >
                       Ver nuevos trámites
                     </Link>
@@ -174,7 +166,7 @@ export default function ConsultaTramitePage() {
                 <div className="mb-8">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{tramite.nombre_tramite}</h1>
                   <div className="flex items-center gap-3 mt-4 flex-wrap">
-                    <span className="text-sm font-semibold text-gray-600 bg-gray-100 px-4 py-2 rounded-full">
+                    <span className="text-sm font-semibold text-black bg-gray-100 px-4 py-2 rounded-full">
                       Código: {tramite.codigoTramite}
                     </span>
                     <button
@@ -188,7 +180,7 @@ export default function ConsultaTramitePage() {
 
                 {/* Estado */}
                 <div className="mb-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border-l-4 border-[#8B1A1A]">
-                  <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Estado Actual</h2>
+                  <h2 className="text-sm font-semibold text-black uppercase tracking-wider mb-3">Estado Actual</h2>
                   <div className="flex items-center gap-4">
                     <span className="text-5xl">{getEstadoConfig(tramite.id_estado).icono}</span>
                     <div>
@@ -240,7 +232,7 @@ export default function ConsultaTramitePage() {
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
                           parseInt(id) <= tramite.id_estado 
                             ? 'bg-[#8B1A1A] text-white' 
-                            : 'bg-gray-200 text-gray-600'
+                            : 'bg-gray-200 text-black'
                         }`}>
                           {parseInt(id)}
                         </div>
@@ -287,7 +279,7 @@ export default function ConsultaTramitePage() {
               </Link>
               <Link
                 href="/usuario/SeleccionTramites"
-                className="flex-1 px-6 py-3 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
+                className="flex-1 px-6 py-3 rounded-lg bg-gray-200 text-black font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
               >
                 Solicitar Nuevo Trámite
               </Link>

@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN tipos_tramite tt ON t.id_tipo = tt.id_tipo
       LEFT JOIN estados_tramite et ON t.id_estado = et.id_estado
       JOIN solicitudes_tramite s ON t.id_solicitud = s.id_solicitud
-      JOIN usuarios u ON s.id_estudiante = u.id_usuario
+      JOIN estudiantes e ON s.id_estudiante = e.id_estudiante
+      JOIN usuarios u ON e.id_usuario = u.id_usuario
       WHERE u.correo = ?
       ORDER BY t.fecha_creacion DESC`,
       [session.email]

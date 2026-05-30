@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Header from '../components/Header';
 
 interface TramiteHistorial {
   id_tramite: number;
@@ -66,16 +67,7 @@ export default function HistorialPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white py-12 sm:py-16">
@@ -119,13 +111,13 @@ export default function HistorialPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <p className="text-gray-500 font-medium">Cargando tu historial...</p>
+              <p className="text-black font-medium">Cargando tu historial...</p>
             </div>
           ) : tramites.length === 0 ? (
             <div className="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
               <div className="text-5xl mb-4">📭</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Sin trámites aún</h3>
-              <p className="text-gray-600 mb-6">No tienes ningún trámite solicitado. ¡Inicia uno ahora!</p>
+              <h3 className="text-2xl font-bold text-black mb-2">Sin trámites aún</h3>
+              <p className="text-black mb-6">No tienes ningún trámite solicitado. ¡Inicia uno ahora!</p>
               <Link
                 href="/usuario/SeleccionTramites"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#8B1A1A] text-white font-semibold rounded-lg hover:bg-[#701515] transition-all"
@@ -138,7 +130,7 @@ export default function HistorialPage() {
             <>
               {/* Filter Section */}
               <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">Filtrar por Estado</h3>
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider mb-4">Filtrar por Estado</h3>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setFiltroEstado('')}
@@ -160,7 +152,7 @@ export default function HistorialPage() {
                         className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                           filtroEstado === estado
                             ? 'bg-[#8B1A1A] text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : 'bg-gray-100 text-black hover:bg-gray-200'
                         }`}
                       >
                         <span>{config?.icon}</span>
@@ -175,7 +167,7 @@ export default function HistorialPage() {
               <div className="space-y-4">
                 {tramitesFiltrados.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-600 font-medium">No hay trámites con este estado</p>
+                    <p className="text-black font-medium">No hay trámites con este estado</p>
                   </div>
                 ) : (
                   tramitesFiltrados.map((tramite) => {
@@ -200,7 +192,7 @@ export default function HistorialPage() {
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 Tipo de Trámite
                               </p>
-                              <p className="text-lg font-semibold text-gray-800">{tramite.tipo_tramite}</p>
+                              <p className="text-lg font-semibold text-black">{tramite.tipo_tramite}</p>
                             </div>
 
                             {/* Fecha */}
@@ -208,7 +200,7 @@ export default function HistorialPage() {
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 Fecha de Solicitud
                               </p>
-                              <p className="text-lg font-semibold text-gray-800">
+                              <p className="text-lg font-semibold text-black">
                                 {new Date(tramite.fecha_creacion).toLocaleDateString('es-ES', {
                                   day: 'numeric',
                                   month: 'long',

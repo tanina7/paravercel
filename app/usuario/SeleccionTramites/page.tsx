@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCarrito } from '@/app/usuario/context/CarritoContext';
+import Header from '../components/Header';
 
 interface Tramite {
   id: number;
@@ -50,18 +51,7 @@ export default function SeleccionTramites() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-
-          
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white py-12 sm:py-16">
@@ -101,7 +91,7 @@ export default function SeleccionTramites() {
             <div className="text-center py-16">
               <div className="inline-block">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1A1A] mb-4"></div>
-                <p className="text-gray-600 font-semibold">Cargando trámites...</p>
+                <p className="text-black font-semibold">Cargando trámites...</p>
               </div>
             </div>
           )}
@@ -123,7 +113,7 @@ export default function SeleccionTramites() {
           {/* Empty State */}
           {!loading && !error && tramitesFiltrados.length === 0 && (
             <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
-              <p className="text-gray-500 text-xl font-semibold mb-2">
+              <p className="text-black text-xl font-semibold mb-2">
                 {filtro
                   ? `No se encontraron trámites con "${filtro}"`
                   : 'No hay trámites disponibles'}
@@ -158,7 +148,7 @@ export default function SeleccionTramites() {
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-black text-sm mb-4 line-clamp-2">
                       {tramite.descripcion}
                     </p>
 
@@ -167,10 +157,10 @@ export default function SeleccionTramites() {
 
                     {/* Requisites */}
                     <div className="mb-6 flex-grow">
-                      <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                      <p className="text-xs font-semibold text-black mb-2 uppercase tracking-wide">
                         Requisitos:
                       </p>
-                      <p className="text-sm text-gray-600 line-clamp-4 leading-relaxed">
+                      <p className="text-sm text-black line-clamp-4 leading-relaxed">
                         {tramite.requisitos}
                       </p>
                     </div>
@@ -236,7 +226,7 @@ export default function SeleccionTramites() {
               Contactar Soporte
             </button>
             <Link
-              href="/"
+              href="/usuario/landing"
               className="px-8 py-3 rounded-lg font-semibold border-2 border-white text-white hover:bg-white/10 transition-all duration-300 text-center"
             >
               Volver a Inicio

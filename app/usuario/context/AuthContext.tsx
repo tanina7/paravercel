@@ -1,17 +1,69 @@
 'use client'
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: any) => {
-  const [user, setUser] = useState({
-    id_usuario: 1,
-    nombre: 'Bibliotecario Demo',
-    rol: 'Biblioteca',
-  });
+  const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        console.log('Fetching session status from /api/auth/verify...');
+        const res = await fetch('/api/auth/verify');
+        console.log('Session status response code:', res.status);
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Session status response data:', data);
+          if (data.success && data.user) {
+            setUser({
+              id_usuario: data.user.id,
+              nombre: data.user.name || data.user.username,
+              rol: data.user.role,
+              email: data.user.email,
+              ...data.user,
+            });
+            console.log('User state updated successfully in AuthContext:', data.user);
+          } else {
+            console.log('Session verification failed or no user:', data);
+            setUser(null);
+          }
+        } else {
+          console.log('Session verification request failed with status:', res.status);
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Error fetching session:', err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (pathname && !pathname.startsWith('/auth')) {
+      checkSession();
+    } else {
+      setLoading(false);
+    }
+  }, [pathname]);
+
+  const logout = async () => {
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      if (res.ok) {
+        setUser(null);
+        window.location.href = '/auth/login';
+      }
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCarrito } from '@/app/usuario/context/CarritoContext';
+import Header from '../components/Header';
 
 export default function CarritoPage() {
   const router = useRouter();
@@ -23,18 +24,7 @@ export default function CarritoPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-
-          
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white py-12 sm:py-16">
@@ -80,7 +70,7 @@ export default function CarritoPage() {
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 Carrito Vacío
               </h3>
-              <p className="text-gray-600 mb-8">
+              <p className="text-black mb-8">
                 No has seleccionado ningún trámite todavía. ¡Comienza a agregar trámites a tu carrito!
               </p>
               <Link
@@ -112,25 +102,25 @@ export default function CarritoPage() {
                           <h4 className="text-lg font-bold text-gray-900 mb-2">
                             {tramite.name}
                           </h4>
-                          <p className="text-gray-600 text-sm mb-3">
+                          <p className="text-black text-sm mb-3">
                             {tramite.descripcion}
                           </p>
                           <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
-                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                            <p className="text-xs font-semibold text-black mb-2">
                               Requisitos:
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-black">
                               {tramite.requisitos}
                             </p>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-black">
                             ID: {tramite.id}
                           </p>
                         </div>
 
                         <div className="flex flex-col items-end gap-4">
                           <div className="text-right">
-                            <p className="text-xs text-gray-500 font-semibold mb-1">
+                            <p className="text-xs text-black font-semibold mb-1">
                               COSTO
                             </p>
                             <p className="text-2xl font-bold bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] bg-clip-text text-transparent">
@@ -174,7 +164,7 @@ export default function CarritoPage() {
                       {items.map((tramite) => (
                         <div
                           key={tramite.id}
-                          className="flex justify-between text-sm text-gray-600"
+                          className="flex justify-between text-sm text-black"
                         >
                           <span className="truncate pr-2">{tramite.name}</span>
                           <span className="font-semibold text-gray-900 flex-shrink-0">
@@ -189,7 +179,7 @@ export default function CarritoPage() {
 
                     {/* Cantidad */}
                     <div className="flex justify-between items-center">
-                      <p className="text-gray-700 font-semibold">Cantidad:</p>
+                      <p className="text-black font-semibold">Cantidad:</p>
                       <p className="text-lg font-bold text-gray-900">
                         {items.length} {items.length === 1 ? 'trámite' : 'trámites'}
                       </p>
@@ -197,7 +187,7 @@ export default function CarritoPage() {
 
                     {/* Total */}
                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-100">
-                      <p className="text-gray-700 font-semibold mb-1">Total a Pagar:</p>
+                      <p className="text-black font-semibold mb-1">Total a Pagar:</p>
                       <p className="text-3xl font-bold bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] bg-clip-text text-transparent">
                         {total.toFixed(2)} Bs
                       </p>
@@ -221,7 +211,7 @@ export default function CarritoPage() {
 
                   {/* Footer Info */}
                   <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-600 text-center">
+                    <p className="text-xs text-black text-center">
                       Confirma tu solicitud para proceder al pago
                     </p>
                   </div>
@@ -244,7 +234,7 @@ export default function CarritoPage() {
               Contactar Soporte
             </button>
             <Link
-              href="/"
+              href="/usuario/landing"
               className="px-8 py-3 rounded-lg font-semibold border-2 border-white text-white hover:bg-white/10 transition-all duration-300 text-center"
             >
               Volver a Inicio

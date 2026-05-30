@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCarrito } from '@/app/usuario/context/CarritoContext';
+import Header from '../components/Header';
 
 interface DocumentoRequerido {
   tipo: string;
@@ -346,17 +347,7 @@ export default function FormularioPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-xl font-bold text-[#8B1A1A]">Trámites Univalle</h1>
-          </Link>
-          
-        </nav>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white py-12 sm:py-16">
@@ -385,7 +376,7 @@ export default function FormularioPage() {
               <div className={`h-2 rounded-full transition-colors ${step >= 1 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
             </div>
             <div className="px-4 text-center">
-              <p className="text-sm font-semibold text-gray-700">Paso {step} de 3</p>
+              <p className="text-sm font-semibold text-black">Paso {step} de 3</p>
             </div>
             <div className="flex-1">
               <div className={`h-2 rounded-full transition-colors ${step >= 2 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
@@ -433,7 +424,7 @@ export default function FormularioPage() {
                     />
                     {cargandoNombre && (
                       <div className="absolute right-3 top-3 flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -444,7 +435,7 @@ export default function FormularioPage() {
 
                 {/* Carrera */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-black mb-2">
                     Carrera <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -526,7 +517,7 @@ export default function FormularioPage() {
                                 type="file"
                                 accept=".pdf"
                                 onChange={(e) => handleFileChange(tramite.id, docIdx, e.target.files?.[0] || null)}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#8B1A1A] file:text-white hover:file:bg-[#6B1415] cursor-pointer"
+                                className="block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#8B1A1A] file:text-white hover:file:bg-[#6B1415] cursor-pointer"
                               />
                               {doc.archivo && (
                                 <span className="text-green-600 font-semibold flex items-center gap-2">

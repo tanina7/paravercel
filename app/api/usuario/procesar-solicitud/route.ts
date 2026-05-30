@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     connection = await getConnection();
 
     // =========================
-    // BUSCAR USUARIO EN BD2
+    // BUSCAR USUARIO EN BD
     // =========================
     const [usuarios]: any = await connection.execute(
       `SELECT id_usuario
@@ -67,7 +67,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const idUsuarioBD2 = usuarios[0].id_usuario;
+    const idUsuario = usuarios[0].id_usuario;
+
+    // =========================
+    // BUSCAR O CREAR ESTUDIANTE
+    // =========================
+    const [estudiantes]: any = await connection.execute(
+      `SELECT id_estudiante FROM estudiantes WHERE id_usuario = ?`,
+      [idUsuario]
+    );
+
+    if (estudiantes.length === 0) {
+      // Generar código único para estudiante
+      const codigoEstudiante = `EST-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      
+      // Crear nuevo registro en estudiantes
+      await connection.execute(
+        `INSERT INTO estudiantes (id_usuario, carrera, subsede, codigo_estudiante)
+         VALUES (?, ?, ?, ?)`,
+        [idUsuario, carrera, subSede, codigoEstudiante]
+      );
+    }
 
     // =========================
     // CÓDIGO Y TOTAL
@@ -80,13 +100,13 @@ export async function POST(request: NextRequest) {
     );
 
     // =========================
-    // INSERT SOLICITUD
+    // INSERT SOLICITUD (usar idUsuario, no idEstudiante)
     // =========================
     const [resultSolicitud]: any = await connection.execute(
       `INSERT INTO solicitudes_tramite
        (id_estudiante, codigo_tramite, estado_general, total)
        VALUES (?, ?, ?, ?)`,
-      [idUsuarioBD2, codigoSolicitud, 'Pendiente', total]
+      [idUsuario, codigoSolicitud, 'Pendiente', total]
     );
 
     const id_solicitud = resultSolicitud.insertId;
@@ -126,11 +146,21 @@ export async function POST(request: NextRequest) {
         [id_solicitud, id_tipo, 1, codigoTramite]
       );
 
+      const id_tramite = resultTramite.insertId;
+
+      // Crear registro inicial en historial_tramite
+      await connection.execute(
+        `INSERT INTO historial_tramite
+         (id_tramite, id_estado, comentario, fecha)
+         VALUES (?, ?, ?, NOW())`,
+        [id_tramite, 1, 'Trámite iniciado']
+      );
+
       tramitesCreados.push({
         nombre: tramite.name,
         codigoTramite,
         costo: tramite.costo,
-        id_tramite: resultTramite.insertId
+        id_tramite
       });
     }
 

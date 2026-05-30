@@ -54,7 +54,7 @@ export default function HistorialPage() {
             Historial de Trámites
           </h1>
           <p className="text-gray-500 mt-2">
-            Registro de procedimientos archivados y finalizados.
+            Registro de procedimientos archivados y Patatas y  funcionemrd.
           </p>
         </div>
 
@@ -147,7 +147,7 @@ export default function HistorialPage() {
                     {/* Acción */}
                     <td className="py-4 px-6 text-center">
                       <Link
-                        href={`/tramites/revisar/${t.id_tramite}`}
+                        href={`/tramites/detalle/${t.id_tramite}`}
                         className="text-blue-600 hover:underline font-medium"
                       >
                         Ver

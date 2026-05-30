@@ -2,6 +2,39 @@ import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import puppeteer from "puppeteer";
+
+async function generarPDF(tramiteId: string | number) {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  const page = await browser.newPage();
+
+  const url = `http://localhost:3000/tramites/${tramiteId}`;
+
+  await page.goto(url, {
+    waitUntil: "networkidle0",
+    timeout: 0,
+  });
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    printBackground: true,
+    preferCSSPageSize: true,
+    margin: {
+      top: "15mm",
+      bottom: "15mm",
+      left: "20mm",
+      right: "20mm",
+    },
+  });
+
+  await browser.close();
+
+  return pdfBuffer;
+}
 
 export async function POST(request: Request) {
   try {
@@ -33,15 +66,15 @@ export async function POST(request: Request) {
       WHERE id_tramite = ?
     `, [tramiteId]);
 
-    // 2. Obtener el id_solicitud vinculado a este trámite para actualizar su estado general
+    // 2. Obtener el id_solicitud
     const [rows]: any = await pool.query(`
       SELECT id_solicitud FROM tramites WHERE id_tramite = ?
     `, [tramiteId]);
 
     if (rows && rows.length > 0) {
       const idSolicitud = rows[0].id_solicitud;
-      
-      // 3. Actualizar la tabla 'solicitudes_tramite' a 'Completado'
+
+      // 3. Actualizar solicitud
       await pool.query(`
         UPDATE solicitudes_tramite 
         SET estado_general = 'Completado'
@@ -49,8 +82,7 @@ export async function POST(request: Request) {
       `, [idSolicitud]);
     }
 
-    // 4. Registrar la acción en el historial dejando constancia de las firmas utilizadas
-    // Si firmasIds viene vacío por alguna razón, usamos 'null' explícito para que MySQL no lance error
+    // 4. Historial
     await pool.query(`
       INSERT INTO historial_tramite (id_tramite, id_estado, id_usuario, comentario) 
       VALUES (
@@ -61,75 +93,96 @@ export async function POST(request: Request) {
       )
     `, [tramiteId, usuarioOperadorId || null, firmasIds || 'Ninguna']);
 
-    // 5. Si viene un archivo de certificado, guardarlo y asociarlo en 'documentos_adjuntos'
+    // 5. Archivo certificado
     if (archivo) {
       const UPLOAD_DIR = join(process.cwd(), 'public/uploads/documentos_adjuntos');
-      try {
-        await mkdir(UPLOAD_DIR, { recursive: true });
-      } catch (err) {
-        // Ignorar si el directorio ya existe
-      }
+      await mkdir(UPLOAD_DIR, { recursive: true });
 
       const timestamp = Date.now();
       const nombreOriginal = archivo.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const nombreArchivo = `${tramiteId}_certificado_${timestamp}_${nombreOriginal}`;
       const rutaArchivo = `/uploads/documentos_adjuntos/${nombreArchivo}`;
 
-      // Guardar en disco
       const buffer = await archivo.arrayBuffer();
       await writeFile(
         join(UPLOAD_DIR, nombreArchivo),
         Buffer.from(buffer)
       );
 
-      // Obtener el tipo de trámite para utilizarlo como tipo_documento
       const [tramiteRows]: any = await pool.query(`
         SELECT tt.nombre_tramite 
         FROM tramites t 
         LEFT JOIN tipos_tramite tt ON t.id_tipo = tt.id_tipo 
         WHERE t.id_tramite = ?
       `, [tramiteId]);
-      
-      const tipoDocumento = (tramiteRows && tramiteRows.length > 0)
+
+      const tipoDocumento = tramiteRows?.length
         ? tramiteRows[0].nombre_tramite
         : 'Certificado';
 
-      // Insertar en la tabla documentos_adjuntos
       await pool.query(`
         INSERT INTO documentos_adjuntos (id_tramite, nombre_archivo, ruta_archivo, tipo_documento) 
         VALUES (?, ?, ?, ?)
       `, [tramiteId, archivo.name, rutaArchivo, tipoDocumento]);
     }
 
-    // 6. Si viene un archivo de respaldo adicional (opcional), guardarlo y asociarlo en 'documentos_adjuntos'
+    // 6. Archivo respaldo
     if (respaldo) {
       const UPLOAD_DIR = join(process.cwd(), 'public/uploads/documentos_adjuntos');
-      try {
-        await mkdir(UPLOAD_DIR, { recursive: true });
-      } catch (err) {
-        // Ignorar si el directorio ya existe
-      }
+      await mkdir(UPLOAD_DIR, { recursive: true });
 
       const timestamp = Date.now();
       const nombreOriginal = respaldo.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const nombreArchivo = `${tramiteId}_respaldo_${timestamp}_${nombreOriginal}`;
       const rutaArchivo = `/uploads/documentos_adjuntos/${nombreArchivo}`;
 
-      // Guardar en disco
       const buffer = await respaldo.arrayBuffer();
       await writeFile(
         join(UPLOAD_DIR, nombreArchivo),
         Buffer.from(buffer)
       );
 
-      // Insertar en la tabla documentos_adjuntos
       await pool.query(`
         INSERT INTO documentos_adjuntos (id_tramite, nombre_archivo, ruta_archivo, tipo_documento) 
         VALUES (?, ?, ?, ?)
       `, [tramiteId, respaldo.name, rutaArchivo, 'Respaldo Adicional']);
     }
 
-    return NextResponse.json({ success: true, message: "Trámite finalizado con éxito." });
+    // 7. GENERAR PDF EN BACKGROUND (NO BLOQUEA RESPUESTA)
+    setTimeout(async () => {
+      try {
+        const pdf = await generarPDF(tramiteId);
+
+        const pdfName = `${tramiteId}_certificado_final.pdf`;
+
+        const pdfPath = join(
+          process.cwd(),
+          "public/uploads/documentos_adjuntos",
+          pdfName
+        );
+
+        await writeFile(pdfPath, pdf);
+
+        await pool.query(`
+          INSERT INTO documentos_adjuntos 
+          (id_tramite, nombre_archivo, ruta_archivo, tipo_documento) 
+          VALUES (?, ?, ?, ?)
+        `, [
+          tramiteId,
+          pdfName,
+          `/uploads/documentos_adjuntos/${pdfName}`,
+          "Certificado PDF Oficial"
+        ]);
+
+      } catch (err) {
+        console.error("ERROR GENERANDO PDF:", err);
+      }
+    }, 0);
+
+    return NextResponse.json({
+      success: true,
+      message: "Trámite finalizado con éxito."
+    });
 
   } catch (error: any) {
     console.error("ERROR AL FINALIZAR TRÁMITE:", error);

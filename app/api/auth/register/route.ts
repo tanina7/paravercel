@@ -3,7 +3,7 @@ import { getPool, getAuthPool } from '@/lib/db';
 import { hash } from 'bcryptjs';
 
 const STUDENT_ROLE_ID = 13;
-const Estudiante_ROLE_ID = 1; // Asegúrate de que este ID coincida con el rol de estudiante en ambas DBs
+const Estudiante_ROLE_ID = 1;
 
 export async function POST(request: Request) {
   let connTramites;
@@ -16,14 +16,22 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       email,
-      password
+      password,
+      idNumber
     } = body;
 
     const cleanFirstName = String(firstName || '').trim();
     const cleanLastName = String(lastName || '').trim();
     const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanIdNumber = String(idNumber || '').trim();
 
-    if (!cleanFirstName || !cleanLastName || !cleanEmail || !password) {
+    if (
+      !cleanFirstName ||
+      !cleanLastName ||
+      !cleanEmail ||
+      !password ||
+      !cleanIdNumber
+    ) {
       return NextResponse.json(
         { success: false, error: 'Faltan campos' },
         { status: 400 }
@@ -33,7 +41,7 @@ export async function POST(request: Request) {
     const hashedPassword = await hash(password, 10);
     const username = cleanEmail.split('@')[0];
 
-    // 🔵 conexiones correctas a ambas DB
+    // Conexiones a ambas bases de datos
     const tramitesPool = await getPool();
     const legalizationPool = await getAuthPool();
 
@@ -48,14 +56,15 @@ export async function POST(request: Request) {
     // =========================
     await connTramites.execute(
       `INSERT INTO usuarios
-      (username, correo, nombre_completo, password_hash, id_rol)
-      VALUES (?, ?, ?, ?, ?)`,
+      (username, correo, nombre_completo, password_hash, id_rol, ci)
+      VALUES (?, ?, ?, ?, ?, ?)`,
       [
         username,
         cleanEmail,
         `${cleanFirstName} ${cleanLastName}`,
         hashedPassword,
-        Estudiante_ROLE_ID
+        Estudiante_ROLE_ID,
+        cleanIdNumber
       ]
     );
 

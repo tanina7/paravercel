@@ -1,237 +1,222 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface Tramite {
   id_tramite: number;
   nombre_completo: string;
   correo: string;
   nombre_estado: string;
-  comprobante_pago?: string;
 }
 
 export default function TableSolicitudes() {
 
   const [data, setData] = useState<Tramite[]>([]);
-  const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Tramite | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // OBTENER DATOS
   const fetchData = async () => {
-    try {
-      const res = await fetch('/api/cajero/tramites');
-      const json = await res.json();
-
-      if (Array.isArray(json)) {
-        setData(json);
-      } else {
-        console.error('API inesperada:', json);
-      }
-
-    } catch (err) {
-      console.error('Error API tramites:', err);
-    }
+    const res = await fetch("/api/cajero/tramites");
+    const json = await res.json();
+    if (Array.isArray(json)) setData(json);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  // APROBAR / RECHAZAR
-  const actualizarEstado = async (id: number, aprobar: boolean) => {
+  const filtered = data.filter(t =>
+    t.nombre_completo?.toLowerCase().includes(search.toLowerCase()) ||
+    t.correo?.toLowerCase().includes(search.toLowerCase()) ||
+    String(t.id_tramite).includes(search)
+  );
 
-    const confirmar = confirm(
-      `¿Seguro que deseas ${aprobar ? 'aprobar' : 'rechazar'} este trámite?`
-    );
+  // 🔵 SOLO PREVIEW (NO APRUEBA)
+  const generarVista = async (id: number) => {
+    setLoading(true);
 
-    if (!confirmar) return;
+    const res = await fetch("/api/cajero/preview-factura", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_tramite: id })
+    });
 
-    try {
-      setLoadingId(id);
+    const json = await res.json();
 
-      const res = await fetch('/api/cajero/procesar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id_tramite: id,
-          aprobar,
-          comentario: '',
-          id_usuario: 1
-        })
-      });
-
-      const json = await res.json();
-
-      if (json.success) {
-        // ✅ ELIMINA EL TRÁMITE DE LA TABLA
-        setData(prev =>
-          prev.filter(t => t.id_tramite !== id)
-        );
-      } else {
-        alert(json.error || 'Error al procesar');
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert('Error del servidor');
-    } finally {
-      setLoadingId(null);
+    if (json.pdfUrl) {
+      setPreviewUrl(json.pdfUrl);
     }
+
+    setLoading(false);
   };
 
-  // FILTRO
-  const filteredData = data.filter((item) => {
-    const term = search.toLowerCase();
+  // 🟢 APROBAR
+  const aceptar = async (id: number) => {
+    await fetch("/api/cajero/procesar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_tramite: id,
+        aprobar: true,
+        comentario: "emitido",
+        id_usuario: 1
+      })
+    });
 
-    return (
-      item.nombre_completo?.toLowerCase().includes(term) ||
-      item.correo?.toLowerCase().includes(term) ||
-      item.nombre_estado?.toLowerCase().includes(term) ||
-      String(item.id_tramite).includes(term)
-    );
-  });
+    setData(prev => prev.filter(t => t.id_tramite !== id));
+  };
+
+  // 🔴 RECHAZAR
+  const rechazar = async (id: number) => {
+    await fetch("/api/cajero/procesar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_tramite: id,
+        aprobar: false,
+        comentario: "rechazado",
+        id_usuario: 1
+      })
+    });
+
+    setData(prev => prev.filter(t => t.id_tramite !== id));
+  };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+    <div className="p-4 md:p-6 text-black">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row justify-between gap-3 mb-4">
+        <h1 className="text-xl font-bold">Trámites</h1>
 
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Trámites
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Gestiona los trámites pendientes
-          </p>
-        </div>
-
-        {/* BUSCADOR */}
-        <div className="relative w-full md:w-96">
-
-          <input
-            type="text"
-            value={search}
-            placeholder="Buscar por nombre, correo o ID..."
-            onChange={(e) => setSearch(e.target.value)}
-            className="
-              w-full
-              px-4
-              py-3
-              rounded-xl
-              border
-              border-gray-300
-              bg-gray-50
-              text-sm
-              focus:outline-none
-              focus:ring-2
-              focus:ring-red-800
-            "
-          />
-
-        </div>
-
+        <input
+          className="border p-2 rounded w-full md:w-80"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      {/* TABLA */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200">
+      {/* TABLE */}
+      <div className="overflow-x-auto rounded-xl shadow-lg border bg-white">
 
-        <table className="w-full">
+        <table className="w-full text-sm">
 
           <thead className="bg-red-900 text-white">
             <tr>
-              <th className="p-4 text-left">ID</th>
-              <th className="p-4 text-left">Nombre</th>
-              <th className="p-4 text-left">Correo</th>
-              <th className="p-4 text-left">Estado</th>
-              <th className="p-4 text-left">Comprobante</th>
-              <th className="p-4 text-left">Acciones</th>
+              <th className="p-3 text-left">ID</th>
+              <th className="p-3 text-left">Nombre</th>
+              <th className="p-3 text-left">Correo</th>
+              <th className="p-3 text-left">Estado</th>
+              <th className="p-3 text-left">Acciones</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className="divide-y">
 
-            {filteredData.length > 0 ? (
-              filteredData.map((tramite) => (
+            {filtered.map(t => (
+              <tr key={t.id_tramite} className="hover:bg-gray-50">
 
-                <tr key={tramite.id_tramite} className="hover:bg-gray-50">
+                <td className="p-3 font-medium">#{t.id_tramite}</td>
+                <td className="p-3">{t.nombre_completo}</td>
+                <td className="p-3 text-gray-600">{t.correo}</td>
 
-                  <td className="p-4 font-semibold">
-                    #{tramite.id_tramite}
-                  </td>
-
-                  <td className="p-4">
-                    {tramite.nombre_completo}
-                  </td>
-
-                  <td className="p-4 text-gray-600">
-                    {tramite.correo}
-                  </td>
-
-                  <td className="p-4 font-semibold">
-                    {tramite.nombre_estado}
-                  </td>
-
-                  <td className="p-4">
-
-                    {tramite.comprobante_pago ? (
-                      <a
-                        href={tramite.comprobante_pago}
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        Ver comprobante
-                      </a>
-                    ) : (
-                      <span className="text-gray-500">
-                        No disponible
-                      </span>
-                    )}
-
-                  </td>
-
-                  <td className="p-4">
-
-                    <div className="flex gap-2">
-
-                      <button
-                        disabled={loadingId === tramite.id_tramite}
-                        onClick={() => actualizarEstado(tramite.id_tramite, true)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                      >
-                        {loadingId === tramite.id_tramite ? '...' : 'Aprobar'}
-                      </button>
-
-                      <button
-                        disabled={loadingId === tramite.id_tramite}
-                        onClick={() => actualizarEstado(tramite.id_tramite, false)}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                      >
-                        {loadingId === tramite.id_tramite ? '...' : 'Rechazar'}
-                      </button>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="text-center py-10 text-gray-500">
-                  No se encontraron resultados
+                <td className="p-3">
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                    t.nombre_estado === "Pagado"
+                      ? "bg-green-100 text-green-700"
+                      : t.nombre_estado === "Rechazado"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {t.nombre_estado}
+                  </span>
                 </td>
+
+                <td className="p-3 flex gap-2 flex-wrap">
+
+                  <button
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                    onClick={() => {
+                      setSelected(t);
+                      setShowModal(true);
+                    }}
+                  >
+                    Vista
+                  </button>
+
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                    onClick={() => aceptar(t.id_tramite)}
+                  >
+                    Aceptar
+                  </button>
+
+                  <button
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                    onClick={() => rechazar(t.id_tramite)}
+                  >
+                    Rechazar
+                  </button>
+
+                </td>
+
               </tr>
-            )}
+            ))}
 
           </tbody>
 
         </table>
-
       </div>
+
+      {/* MODAL */}
+      {showModal && selected && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+
+          <div className="bg-white w-full max-w-3xl rounded-xl p-5">
+
+            <h2 className="text-lg font-bold mb-2">Vista previa</h2>
+
+            <p className="text-sm mb-3">
+              Cliente: {selected.nombre_completo}
+            </p>
+
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-[400px] border"
+              />
+            )}
+
+            <div className="flex gap-2 mt-4">
+
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+                onClick={() => generarVista(selected.id_tramite)}
+              >
+                {loading ? "Generando..." : "Generar vista"}
+              </button>
+
+              <button
+                className="bg-gray-400 px-4 py-2 rounded"
+                onClick={() => {
+                  setShowModal(false);
+                  setSelected(null);
+                  setPreviewUrl(null);
+                }}
+              >
+                Cerrar
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

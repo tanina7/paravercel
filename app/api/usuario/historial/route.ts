@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
       `SELECT 
         t.id_tramite,
         t.codigo_tramite,
+        t.id_solicitud,
+        s.codigo_tramite as codigo_solicitud,
         tt.nombre_tramite as tipo_tramite,
         et.nombre_estado as nombre_estado,
         u.nombre_completo,
@@ -34,8 +36,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN tipos_tramite tt ON t.id_tipo = tt.id_tipo
       LEFT JOIN estados_tramite et ON t.id_estado = et.id_estado
       JOIN solicitudes_tramite s ON t.id_solicitud = s.id_solicitud
-      JOIN estudiantes e ON s.id_estudiante = e.id_estudiante
-      JOIN usuarios u ON e.id_usuario = u.id_usuario
+      JOIN usuarios u ON s.id_estudiante = u.id_usuario
       WHERE u.correo = ?
       ORDER BY t.fecha_creacion DESC`,
       [session.email]

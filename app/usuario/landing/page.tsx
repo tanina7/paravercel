@@ -204,6 +204,8 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+
       {/* Trámites Activos Section */}
       <section className="py-16 sm:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -251,6 +253,38 @@ export default function LandingPage() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Search Section */}
+      <section className="py-16 sm:py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Consulta el Estado de tu Trámite
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Ingresa el código de tu trámite para ver su estado en tiempo real
+            </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleConsultar} className="flex flex-col sm:flex-row gap-3 mb-8">
+              <input
+                type="text"
+                placeholder="Ej: TRV-2025-001234"
+                value={codigoTramite}
+                onChange={(e) => setCodigoTramite(e.target.value)}
+                className="flex-1 px-6 py-3 rounded-lg border-2 border-gray-300 focus:border-[#8B1A1A] focus:outline-none transition-colors duration-300 placeholder-gray-400"
+              />
+              <button
+                type="submit"
+                className="px-8 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 whitespace-nowrap"
+              >
+                Consultar Estado
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -538,11 +572,7 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
     <div className="bg-white rounded-xl border-2 border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Header with Trámite Info */}
       <div className="bg-gradient-to-r from-[#8B1A1A]/5 to-[#6B1415]/5 px-6 py-4 border-b-2 border-gray-100">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <p className="text-sm font-semibold text-black">ID Trámite</p>
-            <p className="text-lg font-bold text-[#8B1A1A]">#{tramite.id_tramite}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <p className="text-sm font-semibold text-black">Código</p>
             <p className="text-lg font-mono text-gray-900">{tramite.codigo_tramite}</p>
@@ -561,7 +591,7 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
       {/* Timeline Horizontal */}
       <div className="px-6 py-6">
         <h3 className="text-lg font-bold text-gray-900 mb-6">Progreso del Trámite</h3>
-        
+
         <div className="overflow-x-auto pb-4">
           <div className="flex gap-0 min-w-max">
             {estadosAMostrar.map((estado, index) => {
@@ -574,32 +604,29 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
                   {/* Estado */}
                   <div className="flex flex-col items-center">
                     {/* Línea conectora (arriba) */}
-                    <div className={`h-1 mb-2 ${
-                      isCompleted || isCurrent ? 'bg-[#8B1A1A]' : 'bg-gray-300'
-                    }`}
-                    style={{ width: '30px' }}
+                    <div className={`h-1 mb-2 ${isCompleted || isCurrent ? 'bg-[#8B1A1A]' : 'bg-gray-300'
+                      }`}
+                      style={{ width: '30px' }}
                     ></div>
 
                     {/* Círculo del estado */}
                     <div
-                      className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-lg font-bold transition-all duration-300 ${
-                        isCurrent
-                          ? `${estado.color} ${estado.borderColor} ring-4 ring-[#8B1A1A]/20 shadow-lg scale-110`
-                          : isCompleted
-                            ? `${estado.color} ${estado.borderColor}`
-                            : 'bg-gray-100 border-gray-300'
-                      }`}
+                      className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-lg font-bold transition-all duration-300 ${isCurrent
+                        ? `${estado.color} ${estado.borderColor} ring-4 ring-[#8B1A1A]/20 shadow-lg scale-110`
+                        : isCompleted
+                          ? `${estado.color} ${estado.borderColor}`
+                          : 'bg-gray-100 border-gray-300'
+                        }`}
                     >
                       <span className="text-xl">{estado.icon}</span>
                     </div>
 
                     {/* Etiqueta del estado */}
                     <div className="mt-3 text-center">
-                      <p className={`text-xs font-semibold whitespace-nowrap ${
-                        isCompleted || isCurrent
-                          ? `${estado.textColor}`
-                          : 'text-gray-500'
-                      }`}>
+                      <p className={`text-xs font-semibold whitespace-nowrap ${isCompleted || isCurrent
+                        ? `${estado.textColor}`
+                        : 'text-gray-500'
+                        }`}>
                         {estado.nombre.replace('Revision Tecnica', 'Revisión')}
                       </p>
                       {isCompleted && !isCurrent && (
@@ -618,10 +645,9 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
 
                   {/* Línea conectora (horizontal) - excepto en el último */}
                   {index < estadosAMostrar.length - 1 && (
-                    <div className={`h-1 mx-0 flex-shrink-0 ${
-                      isCompleted ? 'bg-[#8B1A1A]' : 'bg-gray-300'
-                    }`}
-                    style={{ width: '16px' }}
+                    <div className={`h-1 mx-0 flex-shrink-0 ${isCompleted ? 'bg-[#8B1A1A]' : 'bg-gray-300'
+                      }`}
+                      style={{ width: '16px' }}
                     ></div>
                   )}
                 </div>
@@ -668,11 +694,9 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-[#8B1A1A] animate-pulse"></div>
           <span className="font-semibold text-gray-900">Estado Actual:</span>
-          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-            todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.color || 'bg-gray-50'
-          } border-2 ${
-            todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.borderColor || 'border-gray-300'
-          }`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.color || 'bg-gray-50'
+            } border-2 ${todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.borderColor || 'border-gray-300'
+            }`}>
             {tramite.nombre_estado}
           </span>
           {tramite.nombre_estado === 'Finalizado' && !tramite.visto_por_usuario && (
@@ -745,8 +769,8 @@ function TramiteCard({ tramite, index }: TramiteCardProps) {
           <button
             onClick={handleIniciarTramite}
             className={`w-full py-2.5 rounded-lg font-semibold transition-all duration-300 ${isHovered
-                ? 'bg-[#8B1A1A] text-white shadow-lg'
-                : 'bg-gray-100 text-[#8B1A1A] hover:bg-gray-200'
+              ? 'bg-[#8B1A1A] text-white shadow-lg'
+              : 'bg-gray-100 text-[#8B1A1A] hover:bg-gray-200'
               }`}
           >
             Iniciar Trámite

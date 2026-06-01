@@ -14,6 +14,7 @@ interface TramiteHistorial {
   correo: string;
   nombre_completo: string;
   id_estado: number;
+  id_solicitud: number;
 }
 
 const estadoConfig: Record<string, { label: string; color: string; icon: string }> = {
@@ -55,6 +56,44 @@ export default function HistorialPage() {
 
     obtenerHistorial();
   }, []);
+
+  // Manejar descarga de factura
+  const handleDescargarFactura = async (id_solicitud: number) => {
+    try {
+      const response = await fetch(`/api/usuario/descargar-documento-factura?id_solicitud=${id_solicitud}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al descargar la factura');
+        return;
+      }
+
+      // Obtener el nombre del archivo desde el header
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `factura-${id_solicitud}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Descargar el archivo
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error descargando factura:', error);
+      alert('Error al descargar la factura');
+    }
+  };
 
   // Filtrar trámites por estado
   const tramitesFiltrados = filtroEstado
@@ -222,10 +261,10 @@ export default function HistorialPage() {
                           </div>
 
                           {/* Botones de Acción */}
-                          <div className="flex gap-3 pt-4 border-t border-gray-100">
+                          <div className="flex gap-3 pt-4 border-t border-gray-100 flex-wrap">
                             <Link
                               href={`/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`}
-                              className="flex-1 px-4 py-2 bg-[#8B1A1A] text-white font-semibold rounded-lg hover:bg-[#701515] transition-all flex items-center justify-center gap-2"
+                              className="flex-1 px-4 py-2 bg-[#8B1A1A] text-white font-semibold rounded-lg hover:bg-[#701515] transition-all flex items-center justify-center gap-2 min-w-max"
                             >
                               <span>Ver Detalles</span>
                               <span>→</span>
@@ -233,11 +272,18 @@ export default function HistorialPage() {
                             {tramite.id_estado === 7 && (
                               <Link
                                 href={`/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`}
-                                className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 min-w-max"
                               >
                                 <span>⏳ Descargar Certificado</span>
                               </Link>
                             )}
+                            <button
+                              onClick={() => handleDescargarFactura(tramite.id_solicitud)}
+                              className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 min-w-max"
+                              title="Descargar factura del trámite"
+                            >
+                              <span>📄 Descargar Factura</span>
+                            </button>
                           </div>
                         </div>
                       </div>

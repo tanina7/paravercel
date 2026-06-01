@@ -56,13 +56,15 @@ export default function FormularioPage() {
   const [tramitesConDocumentos, setTramitesConDocumentos] = useState<TramiteDocumentos[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1); // 1: Datos, 2: Documentos, 3: Pago
+  const [step, setStep] = useState(1); // 1: Datos, 2: Documentos, 3: Factura, 4: Pago
   const [solicitudId, setSolicitudId] = useState<number | null>(null);
   const [codigoSolicitud, setCodigoSolicitud] = useState('');
   const [tramitesConCodigosSeguimiento, setTramitesConCodigosSeguimiento] = useState<any[]>([]);
   const [totalMonto, setTotalMonto] = useState(0);
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [cargandoNombre, setCargandoNombre] = useState(true);
+  const [nitCi, setNitCi] = useState('');
+  const [nombreFactura, setNombreFactura] = useState('');
 
   // Inicializar trámites con documentos requeridos y obtener nombre completo
   useEffect(() => {
@@ -248,7 +250,7 @@ export default function FormularioPage() {
           }
         }
 
-        // Ir al paso 3 (Pago)
+        // Ir al paso 3 (Factura)
         setStep(3);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -258,6 +260,46 @@ export default function FormularioPage() {
     }
 
     if (step === 3) {
+      // Validar datos de factura
+      if (!nitCi.trim()) {
+        setError('El NIT/CI es requerido');
+        return;
+      }
+      if (!nombreFactura.trim()) {
+        setError('El nombre para factura es requerido');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Guardar datos de factura
+        const facturaResponse = await fetch('/api/usuario/guardar-factura', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id_solicitud: solicitudId,
+            nit_ci: nitCi,
+            nombre: nombreFactura,
+          }),
+        });
+
+        if (!facturaResponse.ok) {
+          const facturaError = await facturaResponse.json();
+          throw new Error(facturaError.error || 'Error al guardar datos de factura');
+        }
+
+        // Ir al paso 4 (Pago)
+        setStep(4);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (step === 4) {
       if (!comprobante) {
         setError('Debe subir el comprobante de pago');
         return;
@@ -282,7 +324,7 @@ export default function FormularioPage() {
         pagoFormData.append('monto', totalMonto.toString());
         pagoFormData.append('comprobante', comprobante);
 
-        console.log('=== PASO 3: ENVIANDO PAGO ===');
+        console.log('=== PASO 4: ENVIANDO PAGO ===');
         console.log('id_solicitud:', solicitudId);
         console.log('monto:', totalMonto);
         console.log('Enviando comprobante al servidor...');
@@ -333,7 +375,7 @@ export default function FormularioPage() {
           router.push('/usuario/confirmacion-pago');
         }, 100);
       } catch (err) {
-        console.error('❌ Error en paso 3:', err);
+        console.error('❌ Error en paso 4:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
         setLoading(false);
       }
@@ -362,7 +404,7 @@ export default function FormularioPage() {
               Completar Solicitud de Trámites
             </h2>
             <p className="text-lg text-gray-100 max-w-2xl mx-auto">
-              {step === 1 ? 'Ingresa tus datos básicos' : 'Sube los documentos requeridos'}
+              {step === 1 ? 'Ingresa tus datos básicos' : step === 2 ? 'Sube los documentos requeridos' : step === 3 ? 'Completa los datos de facturación' : 'Confirma el pago'}
             </p>
           </div>
         </div>
@@ -376,7 +418,7 @@ export default function FormularioPage() {
               <div className={`h-2 rounded-full transition-colors ${step >= 1 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
             </div>
             <div className="px-4 text-center">
-              <p className="text-sm font-semibold text-black">Paso {step} de 3</p>
+              <p className="text-sm font-semibold text-black">Paso {step} de 4</p>
             </div>
             <div className="flex-1">
               <div className={`h-2 rounded-full transition-colors ${step >= 2 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
@@ -385,7 +427,7 @@ export default function FormularioPage() {
               <div className={`h-2 rounded-full transition-colors ${step >= 3 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
             </div>
             <div className="flex-1">
-              <div className={`h-2 rounded-full transition-colors ${step >= 3 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
+              <div className={`h-2 rounded-full transition-colors ${step >= 4 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
             </div>
           </div>
         </div>
@@ -537,8 +579,53 @@ export default function FormularioPage() {
               </div>
             )}
 
-            {/* Step 3: Pago */}
+            {/* Step 3: Datos de Factura */}
             {step === 3 && (
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 space-y-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Datos de Facturación</h3>
+                
+                <p className="text-black mb-4">Proporciona los datos para tu factura. El resto de información será completada por nuestro equipo administrativo.</p>
+
+                {/* NIT/CI */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    NIT / Cédula de Identidad <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={nitCi}
+                    onChange={(e) => setNitCi(e.target.value)}
+                    placeholder="Ej: 12345678"
+                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                    required
+                  />
+                </div>
+
+                {/* Nombre para Factura */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nombre para Factura <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={nombreFactura}
+                    onChange={(e) => setNombreFactura(e.target.value)}
+                    placeholder="Nombre o razón social"
+                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                    required
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>ℹ️ Nota:</strong> Estos datos serán utilizados para emitir tu factura. Asegúrate de proporcionarlos correctamente.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Pago */}
+            {step === 4 && (
               <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] px-6 py-4">
                   <h3 className="text-xl font-bold text-white">Realizar Pago</h3>
@@ -620,7 +707,7 @@ export default function FormularioPage() {
 
             {/* Botones de acción */}
             <div className="flex gap-4 justify-between">
-              {(step === 2 || step === 3) && (
+              {(step === 2 || step === 3 || step === 4) && (
                 <button
                   type="button"
                   onClick={() => setStep(step - 1)}
@@ -641,7 +728,7 @@ export default function FormularioPage() {
                     : 'bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] hover:shadow-lg hover:scale-105 active:scale-95'
                 }`}
               >
-                {loading ? 'Procesando...' : step === 1 ? 'Siguiente →' : step === 2 ? 'Continuar a Pago →' : '✓ Completar Pago'}
+                {loading ? 'Procesando...' : step === 1 ? 'Siguiente →' : step === 2 ? 'Continuar a Factura →' : step === 3 ? 'Continuar a Pago →' : '✓ Completar Pago'}
               </button>
             </div>
           </form>

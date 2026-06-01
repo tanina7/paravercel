@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface FirmaData {
   id_usuario: number;
+  id_rol?: number;
   nombre_completo: string;
   firma_digital_url: string;
 }
@@ -30,9 +32,11 @@ export default function DetalleTramitePage() {
   const [firmasDB, setFirmasDB] = useState<FirmaData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
 
   useEffect(() => {
     if (!idTramite) return;
+    setBaseUrl(window.location.origin);
 
     const cargarTramite = fetch(`/api/tramites/detalle/${idTramite}`).then(res => res.json());
     const cargarFirmas = fetch('/api/obtener-firmas').then(res => res.json());
@@ -57,7 +61,7 @@ export default function DetalleTramitePage() {
   };
 
   const handleDescargarPDF = async () => {
-    const elemento = document.getElementById('certificado-pdf');
+    const elemento = document.getElementById('certificado-pantalla');
     if (!elemento) return;
 
     setIsDownloading(true);
@@ -87,7 +91,7 @@ export default function DetalleTramitePage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight); 
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight); 
       pdf.save(`Certificado_${tramite?.codigo_tramite || 'Finalizado'}.pdf`);
 
     } catch (error) {
@@ -95,6 +99,16 @@ export default function DetalleTramitePage() {
       alert("Hubo un error generando el PDF. Revisa la consola.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const obtenerNombreRol = (id_rol?: number) => {
+    switch (id_rol) {
+      case 5: return "Director de Carrera";
+      case 6: return "Vicerrector Académico";
+      case 7: return "Rector";
+      case 1: return "Estudiante";
+      default: return "Autoridad";
     }
   };
 
@@ -119,6 +133,7 @@ export default function DetalleTramitePage() {
     );
   }
 
+  // Filtrado de firmas
   let firmasUsadas = firmasDB.filter(f => {
     if (!tramite.firma_digital_url) return false;
     const guardadoStr = String(tramite.firma_digital_url);
@@ -129,11 +144,10 @@ export default function DetalleTramitePage() {
     firmasUsadas = [firmasDB[0]]; 
   }
 
-  const nombresFirmantes = firmasUsadas.length > 0 
-    ? firmasUsadas.map(f => f.nombre_completo).join(', ') 
-    : "Documento oficial archivado";
-
-  const codigoSeguridad = `J5SH5CF${tramite.id_tramite || '94'}`;
+  // Variables para el certificado
+  const codigoSeguridad = `UV-${new Date(tramite.fecha_creacion || tramite.fecha_cierre || Date.now()).getFullYear()}-${tramite.codigo_tramite}`;
+  const urlVerificacion = `${baseUrl}/verificar/${codigoSeguridad}`;
+  const fechaHoy = new Date(tramite.fecha_cierre || Date.now()).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <>
@@ -142,11 +156,12 @@ export default function DetalleTramitePage() {
           @page { size: A4 portrait; margin: 0; }
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: white !important; }
           body * { visibility: hidden !important; }
-          .certificado-oficial, .certificado-oficial * { visibility: visible !important; }
-          .certificado-oficial {
-            position: absolute !important; left: 0 !important; top: 0 !important; width: 100vw !important;
-            margin: 0 !important; padding: 15mm 20mm !important; transform: scale(0.95) !important;
-            transform-origin: top center !important; box-sizing: border-box !important; border: none !important; box-shadow: none !important;
+          #certificado-pantalla, #certificado-pantalla * { visibility: visible !important; }
+          #certificado-pantalla {
+            position: absolute !important; left: 0 !important; top: 0 !important;
+            margin: 0 !important; padding: 0 !important; 
+            border: none !important; box-shadow: none !important;
+            width: 100% !important;
           }
         }
       `}} />
@@ -156,130 +171,132 @@ export default function DetalleTramitePage() {
         <div className="flex items-center gap-4 mb-6 border-b border-gray-200 pb-4">
           <button 
             onClick={() => router.back()}
-            className="text-gray-500 hover:text-[#8B1A1A] transition-colors flex items-center gap-2"
+            className="text-gray-500 hover:text-[#8B1A1A] transition-colors flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm"
           >
             <span className="material-symbols-outlined text-xl">arrow_back</span>
-            <span className="font-bold text-gray-800 text-lg">Volver al Historial</span>
+            <span className="font-bold text-gray-800">Volver al Historial</span>
           </button>
         </div>
 
         <div className="flex flex-col items-center">
           
-          <div id="certificado-pdf" className="certificado-oficial bg-white w-full max-w-3xl rounded-xl shadow-sm border border-gray-100 p-10">
-            
-            <div className="text-center mb-6">
-              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 inline-block print:hidden" data-html2canvas-ignore="true">
-                Trámite Finalizado
-              </span>
-              <p className="text-xs text-gray-500 mb-2">Resolución Ministerial N° 0068/2023 de 15 de marzo de 2023</p>
-              <h1 className="text-2xl font-black text-gray-800 uppercase tracking-widest border-b border-gray-800 pb-2 inline-block">
-                {tramite.tipo_tramite || 'Documento Oficial'}
-              </h1>
-            </div>
-
-            <div className="border border-gray-200 p-3 rounded-md mb-6 bg-gray-50/50">
-              <p className="text-sm text-gray-600 text-center">
-                El Ministerio de Educación del Estado Plurinacional de Bolivia, a través de la Dirección General de Educación Superior Universitaria, certifica a favor de:
-              </p>
-            </div>
-
-            <div className="bg-[#eaf4ff] py-3 px-4 rounded-md mb-6 text-center border border-blue-100">
-              <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">
-                {tramite.nombre_completo || 'Usuario Desconocido'}
-              </h2>
-            </div>
-
-            <div className="mb-6">
-              <table className="w-full text-sm text-left border-collapse border border-gray-200">
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 w-2/5 text-center bg-gray-50">Detalle del documento:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700">{tramite.tipo_tramite || 'Trámite Universitario'}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 text-center bg-gray-50">Firmado por:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700 font-medium">{nombresFirmantes}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 text-center bg-gray-50">Fecha de Cierre:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700">
-                      {tramite.fecha_cierre 
-                        ? new Date(tramite.fecha_cierre).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) 
-                        : 'Fecha no registrada'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 text-center bg-gray-50">Responsable:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700">UNIVALLE</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 text-center bg-gray-50">N° de certificado:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700 font-mono">{tramite.codigo_tramite}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-200 p-3 font-semibold text-gray-700 text-center bg-gray-50">Código de seguridad:</td>
-                    <td className="border border-gray-200 p-3 text-center text-gray-700 font-mono bg-gray-50">{codigoSeguridad}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {firmasUsadas.length > 0 ? (
-              <div className="flex justify-center items-end gap-12 mt-6 mb-4">
-                {firmasUsadas.map((firma) => (
-                  <div key={firma.id_usuario} className="flex flex-col items-center">
-                    {/* AQUÍ ESTÁ EL ESCUDO: Si da error 404, se vuelve un pixel transparente invisible */}
-                    <img 
-                      src={firma.firma_digital_url} 
-                      alt={`Firma`} 
-                      className="h-14 object-contain mix-blend-multiply" 
-                      crossOrigin="anonymous" 
-                      onError={(e) => {
-                        e.currentTarget.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-                      }}
-                    />
-                    <div className="border-t border-gray-800 w-48 mt-1 text-center text-[9px] text-gray-600 pt-1 font-bold uppercase leading-tight">
-                      {firma.nombre_completo}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-               <div className="border-t border-gray-400 w-48 mt-10 text-center text-[9px] text-gray-400 pt-1 font-bold uppercase mx-auto">
-                 SIN FIRMA REGISTRADA
-               </div>
-            )}
-
-            <div className="flex justify-between items-center mt-6">
-              <p className="text-[10px] text-gray-500 max-w-[65%] text-justify leading-relaxed">
-                Se certifica que {firmasUsadas.length > 1 ? "las firmas que anteceden corresponden a los funcionarios autorizados" : "la firma que antecede corresponde al funcionario autorizado"} y que el presente documento tiene plena validez legal conforme a la normativa vigente.
-              </p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 w-24 h-24 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                <span className="material-symbols-outlined text-3xl mb-1">qr_code_2</span>
-                <span className="text-[7px] text-center leading-tight">Escanee para verificar</span>
-              </div>
-            </div>
-
+          <div className="w-full max-w-[210mm] flex justify-between items-center bg-gray-800 text-gray-300 text-xs font-mono py-2 px-4 rounded-t-xl print:hidden">
+            <span>COPIA DIGITAL ARCHIVADA</span>
+            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">archive</span></span>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-3xl mt-6 justify-center">
+          {/* EL DISEÑO A4 EXACTO DEL CERTIFICADO FINAL */}
+          <div id="certificado-pantalla" className="bg-white w-full max-w-[210mm] min-h-[297mm] shadow-2xl relative flex flex-col border border-gray-200">
+            <div className="bg-[#8B1A1A] text-white pt-8 pb-6 px-10">
+              <h1 className="text-2xl font-bold tracking-wide mb-1">UNIVERSIDAD PRIVADA DEL VALLE — UNIVALLE</h1>
+              <p className="text-sm opacity-90 mb-3">Sistema de Gestión de Trámites Académicos</p>
+              <h2 className="text-xl font-black tracking-wide">CONSTANCIA DE TRÁMITE — DOCUMENTO FINAL</h2>
+            </div>
+
+            <div className="flex flex-col flex-1 px-10 py-8">
+              <div className="flex justify-between text-sm text-gray-800 mb-8 font-medium">
+                <span>N° solicitud: #{tramite.id_tramite}</span>
+                <span>Fecha de emisión: {fechaHoy}</span>
+              </div>
+
+              <div className="text-sm text-gray-800 mb-8 space-y-1.5">
+                <p className="font-bold text-base mb-2">Estudiante</p>
+                <p><span className="font-medium">Nombre:</span> {tramite.nombre_completo}</p>
+                <p><span className="font-medium">Correo institucional:</span> {tramite.correo || 'No registrado'}</p>
+                <p><span className="font-medium">Carrera:</span> {tramite.carrera || 'No especificada'}</p>
+                <p><span className="font-medium">Registrado por Unidad de Trámites:</span> UNIVALLE</p>
+              </div>
+
+              <div className="mb-8">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#8B1A1A] text-white">
+                      <th className="py-2.5 px-4 font-bold w-12 border border-[#8B1A1A]">#</th>
+                      <th className="py-2.5 px-4 font-bold border border-[#8B1A1A]">Trámite / procedimiento</th>
+                      <th className="py-2.5 px-4 font-bold text-right border border-[#8B1A1A]">Referencia costo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <td className="py-3 px-4 border-x border-gray-200 text-gray-600">1</td>
+                      <td className="py-3 px-4 border-x border-gray-200 font-medium text-gray-800">{tramite.tipo_tramite}</td>
+                      <td className="py-3 px-4 border-x border-gray-200 text-right text-gray-600">
+                        Bs. {tramite.monto !== undefined && tramite.monto !== null ? tramite.monto : '---'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mb-12">
+                <p className="text-sm font-bold text-gray-900 mb-1">Observaciones:</p>
+                <p className="text-xs text-gray-700 mb-4">Constancia final con registro de firmas de responsables institucionales (control documental).</p>
+                <p className="text-[11px] text-gray-500 leading-relaxed text-justify pr-10">
+                  Este documento consolida el registro de firmas correspondientes al flujo académico-administrativo ({String(tramite.tipo_tramite || '').toLowerCase()}). Las imágenes adjuntas corresponden a las rúbricas institucionales cargadas por Trámites. Los respaldos documentales continúan en las páginas adjuntas a esta certificación.
+                </p>
+              </div>
+
+              {firmasUsadas.length > 0 && (
+                <div className="flex justify-center items-end gap-16 mt-auto mb-16 pt-8">
+                  {firmasUsadas.map((firma) => (
+                    <div key={firma.id_usuario} className="flex flex-col items-center">
+                      <img 
+                        src={firma.firma_digital_url} 
+                        alt="Firma" 
+                        className="h-20 object-contain mix-blend-multiply" 
+                        crossOrigin="anonymous" 
+                        onError={(e) => {
+                          e.currentTarget.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                        }}
+                      />
+                      <div className="border-t border-gray-400 w-48 mt-2 text-center text-[11px] text-gray-800 pt-1 font-bold uppercase leading-tight">
+                        {firma.nombre_completo}
+                        <span className="block font-normal text-gray-500 mt-0.5">{obtenerNombreRol(firma.id_rol)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SECCIÓN DEL QR DINÁMICO */}
+              <div className="mt-auto flex items-start gap-4">
+                <div className="flex flex-col">
+                  <div className="w-24 h-24 bg-white border border-gray-300 p-1 flex items-center justify-center">
+                    <QRCodeSVG value={urlVerificacion} size={86} level={"H"} />
+                  </div>
+                  <span className="text-[9px] font-bold mt-1 text-gray-800">Cód.: {codigoSeguridad}</span>
+                </div>
+                <div className="pt-2">
+                  <p className="text-[10px] text-gray-500 max-w-[250px] leading-relaxed">
+                    Puede comprobar la autenticidad de esta constancia escaneando el código QR impreso.
+                  </p>
+                  <p className="text-[10px] text-gray-800 font-bold mt-2">
+                    Enlace directo: <span className="font-normal">{urlVerificacion}</span>
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[210mm] mt-6 justify-center">
             <button 
               onClick={handleImprimir}
-              className="bg-[#334155] hover:bg-[#1e293b] text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1"
+              className="bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-8 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider"
             >
               <span className="material-symbols-outlined text-xl">print</span>
-              Imprimir
+              Imprimir Copia
             </button>
 
             <button 
               onClick={handleDescargarPDF}
               disabled={isDownloading}
-              className={`bg-[#8B1A1A] hover:bg-[#6c1414] text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-[#8B1A1A] hover:bg-[#6c1414] text-white font-black py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span className={`material-symbols-outlined text-xl ${isDownloading ? 'animate-bounce' : ''}`}>
                 download
               </span>
-              {isDownloading ? 'Generando PDF...' : 'Descargar PDF'}
+              {isDownloading ? 'Generando PDF...' : 'Descargar Original'}
             </button>
           </div>
 

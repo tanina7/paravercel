@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Swal from 'sweetalert2';
-import { QRCodeSVG } from 'qrcode.react'; // <-- NUEVA IMPORTACIÓN
+import { QRCodeSVG } from 'qrcode.react'; 
 
 // --- INTERFACES ---
 interface FirmaData {
@@ -23,6 +23,7 @@ interface TramiteData {
   correo: string;
   carrera?: string; 
   fecha_creacion: string;
+  monto?: number | string; // <-- AÑADIDO: Para recibir el costo desde la API
 }
 
 export default function EmitirCertificadoPage() { 
@@ -40,11 +41,10 @@ export default function EmitirCertificadoPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [baseUrl, setBaseUrl] = useState(''); // <-- ESTADO PARA LA URL DEL QR
+  const [baseUrl, setBaseUrl] = useState(''); 
 
   // --- EFECTO PARA CARGAR DATOS ---
   useEffect(() => {
-    // Capturamos el dominio real (localhost:3000 o www.tu-dominio.com)
     setBaseUrl(window.location.origin);
 
     const cargarFirmas = fetch('/api/obtener-firmas').then(res => res.json());
@@ -117,9 +117,20 @@ export default function EmitirCertificadoPage() {
 
     let finalPdfBlob: Blob;
 
-    try {
+   try {
       const imgData = await domtoimage.toPng(element, {
         bgcolor: '#ffffff',
+        // 🔥 EL ESCUDO: Filtramos las imágenes rotas para que no explote
+        filter: (node: any) => {
+          if (node.tagName === 'IMG') {
+            // Si la imagen no cargó (dio 404), su ancho será 0. La ignoramos.
+            if (node.naturalWidth === 0) return false;
+          }
+          // También ignoramos scripts que a veces causan conflictos
+          if (node.tagName === 'SCRIPT') return false;
+          
+          return true;
+        },
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left'
@@ -269,7 +280,7 @@ export default function EmitirCertificadoPage() {
   const codigoSeguridad = datosTramite ? `UV-${new Date(datosTramite.fecha_creacion).getFullYear()}-${datosTramite.codigo_tramite}` : '';
   const fechaHoy = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
   
-  // Ruta donde se validará el documento (Ej. localhost:3000/verificar/UV-2026-TR-872)
+  // Ruta donde se validará el documento
   const urlVerificacion = `${baseUrl}/verificar/${codigoSeguridad}`;
 
   if (loading) {
@@ -346,7 +357,10 @@ export default function EmitirCertificadoPage() {
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <td className="py-3 px-4 border-x border-gray-200 text-gray-600">1</td>
                       <td className="py-3 px-4 border-x border-gray-200 font-medium text-gray-800">{datosTramite.tipo_tramite}</td>
-                      <td className="py-3 px-4 border-x border-gray-200 text-right text-gray-600">Bs. ---</td>
+                      {/* --- AQUÍ REEMPLAZAMOS EL COSTO --- */}
+                      <td className="py-3 px-4 border-x border-gray-200 text-right text-gray-600">
+                        Bs. {datosTramite.monto !== undefined && datosTramite.monto !== null ? datosTramite.monto : '---'}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -378,7 +392,6 @@ export default function EmitirCertificadoPage() {
               <div className="mt-auto flex items-start gap-4">
                 <div className="flex flex-col">
                   <div className="w-24 h-24 bg-white border border-gray-300 p-1 flex items-center justify-center">
-                    {/* Generador del QR SVG Dinámico */}
                     <QRCodeSVG value={urlVerificacion} size={86} level={"H"} />
                   </div>
                   <span className="text-[9px] font-bold mt-1 text-gray-800">Cód.: {codigoSeguridad}</span>

@@ -1,6 +1,8 @@
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const [rows]: any = await pool.query(`
@@ -10,7 +12,10 @@ export async function GET() {
         tt.nombre_tramite AS tipo_tramite,
         e.nombre_estado,
         u.nombre_completo,
+        u.ci,
         u.correo,
+        es.carrera,
+        es.subsede AS sede,
         t.fecha_creacion,
 
         (
@@ -37,11 +42,12 @@ export async function GET() {
       JOIN solicitudes_tramite s 
         ON t.id_solicitud = s.id_solicitud
 
-      JOIN estudiantes es 
-        ON s.id_estudiante = es.id_estudiante
-
+      /* 🔥 AQUÍ ESTÁ LA CORRECCIÓN DE LOS JOINS 🔥 */
       JOIN usuarios u 
-        ON es.id_usuario = u.id_usuario
+        ON s.id_estudiante = u.id_usuario
+
+      LEFT JOIN estudiantes es 
+        ON u.id_usuario = es.id_usuario
 
       JOIN tipos_tramite tt 
         ON t.id_tipo = tt.id_tipo

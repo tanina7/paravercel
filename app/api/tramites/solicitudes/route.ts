@@ -15,6 +15,7 @@ export async function GET() {
         est.carrera,
         est.subsede AS sede,
         t.fecha_creacion,
+        s.total AS monto, /* <-- AÑADIDO: El costo total de la solicitud */
 
         (
           SELECT COALESCE(

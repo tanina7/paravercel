@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 
-// Definimos cómo es una firma según la base de datos
+// Añadimos id_rol a la interfaz
 interface FirmaData {
   id_usuario: number;
+  id_rol?: number; 
   nombre_completo: string;
   foto_perfil_url: string;
   firma_digital_url: string;
@@ -14,11 +16,29 @@ export default function FirmasDisponiblesPage() {
   const [firmas, setFirmas] = useState<FirmaData[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados
+  // Estados de UI
   const [busqueda, setBusqueda] = useState('');
   const [firmaEnZoom, setFirmaEnZoom] = useState<FirmaData | null>(null);
+  const [firmaEnEdicion, setFirmaEnEdicion] = useState<FirmaData | null>(null);
+  
+  // Estados para el formulario de edición
+  const [editNombre, setEditNombre] = useState('');
+  const [editRol, setEditRol] = useState<number>(1);
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
+  // Función para traducir el número de rol a texto (Según tu BD)
+  const obtenerNombreRol = (id_rol?: number) => {
+    switch (id_rol) {
+      case 5: return "Director de Carrera";
+      case 6: return "Vicerrector Académico";
+      case 7: return "Rector";
+      case 1: return "Estudiante";
+      default: return "Autoridad Asignada";
+    }
+  };
+
+  const cargarFirmas = () => {
+    setLoading(true);
     fetch('/api/obtener-firmas')
       .then((res) => res.json())
       .then((data) => {
@@ -31,11 +51,60 @@ export default function FirmasDisponiblesPage() {
         console.error("Error al cargar firmas:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    cargarFirmas();
   }, []);
 
   const firmasFiltradas = firmas.filter((firma) =>
     firma.nombre_completo.toLowerCase().includes(busqueda.toLowerCase())
   );
+
+  // Abrir el modal de edición y cargar los datos actuales
+  const abrirEdicion = (firma: FirmaData) => {
+    setFirmaEnEdicion(firma);
+    setEditNombre(firma.nombre_completo);
+    setEditRol(firma.id_rol || 5); // Por defecto Director si no tiene rol
+  };
+
+  // Función para guardar los cambios en la BD
+  const guardarEdicion = async () => {
+    if (!firmaEnEdicion) return;
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/editar-firma', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_usuario: firmaEnEdicion.id_usuario,
+          nombre_completo: editNombre,
+          id_rol: editRol
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          title: '¡Actualizado!',
+          text: 'Los datos de la autoridad han sido guardados.',
+          icon: 'success',
+          confirmButtonColor: '#8B1A1A'
+        });
+        setFirmaEnEdicion(null);
+        cargarFirmas(); // Recargamos la lista para ver los cambios
+      } else {
+        Swal.fire('Error', data.error || 'No se pudo actualizar', 'error');
+      }
+    } catch (error) {
+      console.error("Error al editar:", error);
+      Swal.fire('Error', 'Problema de conexión con el servidor', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 space-y-6 relative text-black">
@@ -110,8 +179,9 @@ export default function FirmasDisponiblesPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-black text-black text-lg leading-tight truncate">{firma.nombre_completo}</h4>
-                  <p className="text-[10px] text-white bg-black font-bold mt-1 inline-block px-2 py-1 rounded uppercase tracking-wider">
-                    Autoridad
+                  {/* AQUÍ MOSTRAMOS EL ROL EN LUGAR DE "AUTORIDAD" GENÉRICO */}
+                  <p className={`text-[10px] text-white font-bold mt-1 inline-block px-2 py-1 rounded uppercase tracking-wider ${firma.id_rol === 7 ? 'bg-[#8B1A1A]' : 'bg-black'}`}>
+                    {obtenerNombreRol(firma.id_rol)}
                   </p>
                 </div>
               </div>
@@ -130,15 +200,21 @@ export default function FirmasDisponiblesPage() {
                 </div>
               </div>
 
-              {/* Pie de tarjeta */}
-              <div className="px-6 py-3 bg-gray-100 flex justify-between items-center border-t-2 border-black">
-                <span className="text-xs text-black font-black font-mono bg-white px-2 py-1 border-2 border-black rounded">ID: {firma.id_usuario}</span>
+              {/* Pie de tarjeta con Botones de Acción */}
+              <div className="px-6 py-3 bg-gray-100 flex justify-end gap-3 items-center border-t-2 border-black">
+                
+                <button 
+                  onClick={() => abrirEdicion(firma)}
+                  className="text-black bg-white hover:bg-gray-200 font-bold px-4 py-2 text-sm flex items-center gap-2 rounded-lg transition-all border-2 border-black"
+                >
+                  <span className="material-symbols-outlined text-lg">edit</span> Editar
+                </button>
+
                 <button 
                   onClick={() => setFirmaEnZoom(firma)}
-                  className="text-black bg-white hover:bg-black hover:text-white p-2 rounded-full transition-all border-2 border-black"
-                  title="Ver firma en detalle"
+                  className="text-white bg-black hover:bg-[#8B1A1A] font-bold px-4 py-2 text-sm flex items-center gap-2 rounded-lg transition-all border-2 border-black"
                 >
-                  <span className="material-symbols-outlined text-xl">visibility</span>
+                  <span className="material-symbols-outlined text-lg">visibility</span> Ver
                 </button>
               </div>
             </div>
@@ -146,7 +222,65 @@ export default function FirmasDisponiblesPage() {
         </div>
       )}
 
-      {/* MODAL */}
+      {/* MODAL DE EDICIÓN */}
+      {firmaEnEdicion && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border-2 border-black animate-in zoom-in-95">
+            
+            <div className="px-6 py-4 border-b-2 border-black flex justify-between items-center bg-gray-50">
+              <h3 className="font-black text-black text-xl">Editar Autoridad</h3>
+              <button onClick={() => setFirmaEnEdicion(null)} className="text-black hover:text-[#8B1A1A] transition-colors">
+                <span className="material-symbols-outlined text-2xl block">close</span>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre Completo</label>
+                <input 
+                  type="text" 
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-black rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B1A1A] bg-white text-black font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Rol Asignado</label>
+                <select 
+                  value={editRol}
+                  onChange={(e) => setEditRol(Number(e.target.value))}
+                  className="w-full px-4 py-3 border-2 border-black rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B1A1A] bg-white text-black font-semibold appearance-none"
+                >
+                  <option value={5}>Director de Carrera</option>
+                  <option value={6}>Vicerrector Académico</option>
+                  <option value={7}>Rector</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-100 border-t-2 border-black flex justify-end gap-3">
+              <button 
+                onClick={() => setFirmaEnEdicion(null)}
+                className="px-5 py-2 font-bold text-black bg-white border-2 border-black rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={guardarEdicion}
+                disabled={isSaving}
+                className="px-5 py-2 font-bold text-white bg-[#8B1A1A] border-2 border-black rounded-lg hover:bg-red-800 transition-colors flex items-center gap-2"
+              >
+                {isSaving ? <span className="material-symbols-outlined animate-spin text-sm">sync</span> : null}
+                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ZOOM (Se mantiene igual) */}
       {firmaEnZoom && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -165,7 +299,7 @@ export default function FirmasDisponiblesPage() {
                 />
                 <div>
                   <h3 className="font-black text-black text-lg leading-none">{firmaEnZoom.nombre_completo}</h3>
-                  <span className="text-xs font-bold text-black uppercase">Vista detallada</span>
+                  <span className="text-xs font-bold text-black uppercase">{obtenerNombreRol(firmaEnZoom.id_rol)}</span>
                 </div>
               </div>
               <button 

@@ -7,6 +7,7 @@ export default function TramitesPage() {
 
   const [tramites, setTramites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState(''); // Estado para el buscador
 
   // ==========================================
   // FETCH REAL DESDE API
@@ -26,6 +27,16 @@ export default function TramitesPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // ==========================================
+  // FILTRO DE BÚSQUEDA (Por Nombre o CI)
+  // ==========================================
+  const tramitesFiltrados = tramites.filter((t) => {
+    const termino = busqueda.toLowerCase();
+    const nombre = t.nombre_completo?.toLowerCase() || '';
+    const ci = t.ci?.toLowerCase() || '';
+    return nombre.includes(termino) || ci.includes(termino);
+  });
 
   // ==========================================
   // CONTADORES DINÁMICOS
@@ -107,7 +118,7 @@ export default function TramitesPage() {
           </p>
         </div>
 
-        {/* Buscador visual */}
+        {/* Buscador visual (AHORA FUNCIONAL) */}
         <div className="relative">
           <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-sm">
             search
@@ -115,7 +126,9 @@ export default function TramitesPage() {
 
           <input
             type="text"
-            placeholder="Buscar estudiante..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre o CI..."
             className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8B1A1A] focus:ring-1 focus:ring-[#8B1A1A] w-64"
           />
         </div>
@@ -135,7 +148,7 @@ export default function TramitesPage() {
                 <th className="py-4 px-6">Estudiante</th>
 
                 <th className="py-4 px-6 text-center">
-                  Carrera y Año
+                  Carrera y Sede
                 </th>
 
                 <th className="py-4 px-6 text-center">
@@ -165,7 +178,7 @@ export default function TramitesPage() {
                   </td>
                 </tr>
 
-              ) : tramites.length === 0 ? (
+              ) : tramitesFiltrados.length === 0 ? (
 
                 <tr>
                   <td colSpan={5} className="py-24 text-center">
@@ -173,16 +186,16 @@ export default function TramitesPage() {
 
                       <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
                         <span className="material-symbols-outlined text-4xl text-gray-300">
-                          folder_open
+                          {busqueda ? 'search_off' : 'folder_open'}
                         </span>
                       </div>
 
                       <p className="text-gray-600 font-semibold text-lg">
-                        No hay trámites
+                        {busqueda ? 'No se encontraron resultados' : 'No hay trámites'}
                       </p>
 
                       <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
-                        Los trámites aparecerán aquí cuando existan registros.
+                        {busqueda ? `Nadie coincide con "${busqueda}".` : 'Los trámites aparecerán aquí cuando existan registros.'}
                       </p>
 
                     </div>
@@ -191,32 +204,36 @@ export default function TramitesPage() {
 
               ) : (
 
-                tramites.map((tramite) => (
+                tramitesFiltrados.map((tramite) => (
 
                   <tr
                     key={tramite.id_tramite}
                     className="hover:bg-gray-50 transition-colors group"
                   >
 
-                    {/* ESTUDIANTE */}
+                    {/* ESTUDIANTE (Nombre, CI y Correo) */}
                     <td className="py-4 px-6">
                       <p className="font-semibold text-gray-900 text-sm">
                         {tramite.nombre_completo}
                       </p>
+                      
+                      <p className="text-gray-600 text-[11px] mt-1 font-mono bg-gray-100 inline-block px-1.5 py-0.5 rounded border border-gray-200">
+                        CI: {tramite.ci || 'Sin registrar'}
+                      </p>
 
-                      <p className="text-gray-400 text-xs mt-0.5">
+                      <p className="text-gray-400 text-xs mt-1 block">
                         {tramite.correo}
                       </p>
                     </td>
 
-                    {/* CARRERA */}
+                    {/* CARRERA Y SEDE */}
                     <td className="py-4 px-6 text-center">
-                      <p className="text-gray-700 text-sm">
+                      <p className="text-gray-700 text-sm font-medium">
                         {tramite.carrera || 'Sin carrera'}
                       </p>
 
-                      <p className="text-gray-400 text-xs mt-0.5">
-                        {tramite.anio || '---'}
+                      <p className="text-gray-500 text-xs mt-1">
+                        Sede: {tramite.sede || '---'}
                       </p>
                     </td>
 
@@ -256,7 +273,7 @@ export default function TramitesPage() {
         {/* FOOTER */}
         <div className="border-t border-gray-100 bg-gray-50/30 px-6 py-4 flex items-center justify-between">
           <span className="text-sm text-gray-400">
-            Mostrando {tramites.length} registros
+            Mostrando {tramitesFiltrados.length} registros
           </span>
         </div>
 

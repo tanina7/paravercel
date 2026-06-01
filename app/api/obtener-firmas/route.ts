@@ -6,6 +6,7 @@ export async function GET() {
     const [rows]: any = await pool.query(`
       SELECT 
         id_usuario, 
+        id_rol, 
         nombre_completo, 
         foto_perfil_url, 
         firma_digital_url 

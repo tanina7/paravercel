@@ -11,6 +11,9 @@ export async function GET() {
         e.nombre_estado,
         u.nombre_completo,
         u.correo,
+        u.ci, /* Asumimos que el carnet está en la tabla usuarios. Si se llama distinto, cambia 'ci' por el nombre correcto */
+        est.carrera,
+        est.subsede AS sede,
         t.fecha_creacion,
 
         (
@@ -37,9 +40,12 @@ export async function GET() {
       JOIN solicitudes_tramite s 
         ON t.id_solicitud = s.id_solicitud
 
-      -- 🔥 CAMBIO CLAVE: SIN estudiantes
       JOIN usuarios u 
         ON s.id_estudiante = u.id_usuario
+
+      -- 🔥 AÑADIMOS LA TABLA ESTUDIANTES PARA OBTENER CARRERA Y SEDE
+      LEFT JOIN estudiantes est 
+        ON u.id_usuario = est.id_usuario
 
       JOIN tipos_tramite tt 
         ON t.id_tipo = tt.id_tipo
@@ -58,5 +64,5 @@ export async function GET() {
       { error: error.message },
       { status: 500 }
     );
-  }
+  } 
 }

@@ -82,6 +82,11 @@ const estadoConfig: Record<string, { label: string; color: string }> = {
 export default function LandingPage() {
   const router = useRouter();
   const [codigoTramite, setCodigoTramite] = useState('');
+  
+  // --- NUEVO ESTADO AÑADIDO PARA TU APARTADO ---
+  const [codigoVerificacion, setCodigoVerificacion] = useState('');
+  // ----------------------------------------------
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tramitesActivos, setTramitesActivos] = useState<TramiteActivo[]>([]);
   const [loadingTramites, setLoadingTramites] = useState(true);
@@ -121,7 +126,7 @@ export default function LandingPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  // Consulta
+  // Consulta original de tu compañera
   const handleConsultar = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -134,6 +139,19 @@ export default function LandingPage() {
     router.push(`/usuario/consulta-tramite?codigo=${encodeURIComponent(codigoTramite)}`);
     setCodigoTramite('');
   };
+
+  // --- NUEVA FUNCIÓN PARA TU APARTADO ---
+  const handleVerificarDocumento = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!codigoVerificacion.trim()) {
+      alert('Por favor ingresa el código de verificación del documento');
+      return;
+    }
+    // Redirecciona a la página de verificación que creamos
+    router.push(`/verificar/${encodeURIComponent(codigoVerificacion.trim())}`);
+    setCodigoVerificacion('');
+  };
+  // ---------------------------------------
 
   // Carruseel navigation
   const handleNext = () => {
@@ -204,8 +222,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-
       {/* Trámites Activos Section */}
       <section className="py-16 sm:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -256,8 +272,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Search Section */}
-      <section className="py-16 sm:py-24 bg-gray-50">
+      {/* Search Section Original */}
+      <section className="py-16 sm:py-24 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -287,6 +303,42 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* =========================================================
+          NUEVO APARTADO: VERIFICAR DOCUMENTO (EL QUE ME PEDISTE)
+      ========================================================= */}
+      <section className="py-16 bg-gray-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center max-w-4xl mx-auto">
+            <span className="material-symbols-outlined text-5xl text-green-600 mb-4">verified_user</span>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Verificar Autenticidad de Documento
+            </h2>
+            <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
+              Comprueba la validez legal de cualquier certificado emitido por UNIVALLE ingresando su código de seguridad alfanumérico.
+            </p>
+
+            <form onSubmit={handleVerificarDocumento} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+              <input
+                type="text"
+                placeholder="Ej: UV-2026-CON-123-2AA0CD47"
+                value={codigoVerificacion}
+                onChange={(e) => setCodigoVerificacion(e.target.value)}
+                className="flex-1 px-6 py-3 rounded-lg border-2 border-green-200 focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:outline-none transition-colors duration-300 placeholder-gray-400 font-mono font-bold text-gray-800"
+              />
+              <button
+                type="submit"
+                className="px-8 py-3 rounded-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined">search</span>
+                Validar Documento
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+      {/* ========================================================= */}
+
 
       {/* Quick Access Carousel Section */}
       <section className="py-16 sm:py-24 bg-white">

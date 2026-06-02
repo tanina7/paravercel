@@ -91,6 +91,7 @@ export default function LandingPage() {
   const [tramitesActivos, setTramitesActivos] = useState<TramiteActivo[]>([]);
   const [loadingTramites, setLoadingTramites] = useState(true);
   const [errorTramites, setErrorTramites] = useState('');
+  const [expandedTramitesSection, setExpandedTramitesSection] = useState(false);
 
   // Función para obtener trámites activos
   const obtenerTramitesActivos = async () => {
@@ -222,7 +223,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trámites Activos Section */}
+      {/* Trámites Activos Section - Collapsible */}
       <section className="py-16 sm:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -234,75 +235,58 @@ export default function LandingPage() {
                 Monitorea el estado actual y el historial de tus trámites en tiempo real
               </p>
             </div>
-            <button
-              onClick={obtenerTramitesActivos}
-              disabled={loadingTramites}
-              className="px-6 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
-            >
-              <span>🔄</span>
-              {loadingTramites ? 'Actualizando...' : 'Actualizar'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setExpandedTramitesSection(!expandedTramitesSection)}
+                className="px-6 py-3 rounded-lg font-semibold bg-gray-400 text-white hover:bg-gray-500 transition-all duration-300 active:scale-95 whitespace-nowrap flex items-center gap-2"
+              >
+                <span>{expandedTramitesSection ? '▼' : '▶'}</span>
+                {expandedTramitesSection ? 'Ocultar' : 'Mostrar'}
+              </button>
+              <button
+                onClick={obtenerTramitesActivos}
+                disabled={loadingTramites || !expandedTramitesSection}
+                className="px-6 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
+              >
+                <span>🔄</span>
+                {loadingTramites ? 'Actualizando...' : 'Actualizar'}
+              </button>
+            </div>
           </div>
 
-          {loadingTramites ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1A1A]"></div>
-            </div>
-          ) : tramitesActivos.length === 0 ? (
-            <div className="bg-white rounded-xl border-2 border-gray-200 p-8 text-center">
-              <div className="text-5xl mb-4">📋</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No tienes trámites activos</h3>
-              <p className="text-black mb-6">
-                Todos tus trámites han sido finalizados o rechazados.
-              </p>
-              <Link
-                href="/usuario/SeleccionTramites"
-                className="inline-block px-8 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95"
-              >
-                Iniciar nuevo trámite
-              </Link>
-            </div>
-          ) : (
-            <div className="grid gap-8">
-              {tramitesActivos.map((tramite) => (
-                <TramiteTimelineCard key={tramite.id_tramite} tramite={tramite} />
-              ))}
-            </div>
+          {expandedTramitesSection && (
+            <>
+              {loadingTramites ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1A1A]"></div>
+                </div>
+              ) : tramitesActivos.length === 0 ? (
+                <div className="bg-white rounded-xl border-2 border-gray-200 p-8 text-center">
+                  <div className="text-5xl mb-4">📋</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">No tienes trámites activos</h3>
+                  <p className="text-black mb-6">
+                    Todos tus trámites han sido finalizados o rechazados.
+                  </p>
+                  <Link
+                    href="/usuario/SeleccionTramites"
+                    className="inline-block px-8 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95"
+                  >
+                    Iniciar nuevo trámite
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-8">
+                  {tramitesActivos.map((tramite) => (
+                    <TramiteTimelineCard key={tramite.id_tramite} tramite={tramite} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
 
-      {/* Search Section Original */}
-      <section className="py-16 sm:py-24 bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Consulta el Estado de tu Trámite
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Ingresa el código de tu trámite para ver su estado en tiempo real
-            </p>
-          </div>
-
-          <div className="max-w-2xl mx-auto">
-            <form onSubmit={handleConsultar} className="flex flex-col sm:flex-row gap-3 mb-8">
-              <input
-                type="text"
-                placeholder="Ej: TRV-2025-001234"
-                value={codigoTramite}
-                onChange={(e) => setCodigoTramite(e.target.value)}
-                className="flex-1 px-6 py-3 rounded-lg border-2 border-gray-300 focus:border-[#8B1A1A] focus:outline-none transition-colors duration-300 placeholder-gray-400"
-              />
-              <button
-                type="submit"
-                className="px-8 py-3 rounded-lg font-semibold bg-[#8B1A1A] text-white hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 whitespace-nowrap"
-              >
-                Consultar Estado
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
+      
 
       {/* =========================================================
           NUEVO APARTADO: VERIFICAR DOCUMENTO (EL QUE ME PEDISTE)
@@ -310,7 +294,7 @@ export default function LandingPage() {
       <section className="py-16 bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center max-w-4xl mx-auto">
-            <span className="material-symbols-outlined text-5xl text-green-600 mb-4">verified_user</span>
+            <span className="material-symbols-outlined text-5xl text-green-600 mb-4"></span>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Verificar Autenticidad de Documento
             </h2>
@@ -330,7 +314,7 @@ export default function LandingPage() {
                 type="submit"
                 className="px-8 py-3 rounded-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
               >
-                <span className="material-symbols-outlined">search</span>
+                <span className="material-symbols-outlined"></span>
                 Validar Documento
               </button>
             </form>
@@ -581,6 +565,8 @@ interface TramiteCardProps {
 }
 
 function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
+  const [expanded, setExpanded] = useState(false);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -624,11 +610,7 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
     <div className="bg-white rounded-xl border-2 border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Header with Trámite Info */}
       <div className="bg-gradient-to-r from-[#8B1A1A]/5 to-[#6B1415]/5 px-6 py-4 border-b-2 border-gray-100">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm font-semibold text-black">Código</p>
-            <p className="text-lg font-mono text-gray-900">{tramite.codigo_tramite}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-sm font-semibold text-black">Tipo</p>
             <p className="text-lg text-gray-900">{tramite.tipo_tramite || 'N/A'}</p>
@@ -640,7 +622,8 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
         </div>
       </div>
 
-      {/* Timeline Horizontal */}
+      {/* Timeline Horizontal - Collapsible */}
+      {expanded && (
       <div className="px-6 py-6">
         <h3 className="text-lg font-bold text-gray-900 mb-6">Progreso del Trámite</h3>
 
@@ -740,11 +723,12 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Footer with Current Status */}
-      <div className="bg-gray-50 px-6 py-4 border-t-2 border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-[#8B1A1A] animate-pulse"></div>
+      <div className="bg-gray-50 px-6 py-4 border-t-2 border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-3 h-3 rounded-full bg-[#8B1A1A] animate-pulse flex-shrink-0"></div>
           <span className="font-semibold text-gray-900">Estado Actual:</span>
           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.color || 'bg-gray-50'
             } border-2 ${todosLosEstados.find((e) => e.nombre === tramite.nombre_estado)?.borderColor || 'border-gray-300'
@@ -757,25 +741,33 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
             </span>
           )}
         </div>
-        <button
-          onClick={async () => {
-            if (tramite.nombre_estado === 'Finalizado' && !tramite.visto_por_usuario) {
-              try {
-                await fetch('/api/usuario/marcar-tramite-visto', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ id_tramite: tramite.id_tramite }),
-                });
-              } catch (err) {
-                console.error('Error marcando como visto:', err);
+        <div className="flex gap-2">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-sm px-3 py-2 bg-gray-200 text-gray-900 hover:bg-gray-300 font-semibold rounded-lg transition-colors duration-300"
+          >
+            {expanded ? '▼ Ocultar' : '▶ Ver Detalles'}
+          </button>
+          <button
+            onClick={async () => {
+              if (tramite.nombre_estado === 'Finalizado' && !tramite.visto_por_usuario) {
+                try {
+                  await fetch('/api/usuario/marcar-tramite-visto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_tramite: tramite.id_tramite }),
+                  });
+                } catch (err) {
+                  console.error('Error marcando como visto:', err);
+                }
               }
-            }
-            window.location.href = '/usuario/historial';
-          }}
-          className="text-sm text-[#8B1A1A] hover:underline font-semibold transition-colors duration-300 hover:text-[#6B1415]"
-        >
-          Ver detalles →
-        </button>
+              window.location.href = `/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`;
+            }}
+            className="text-sm px-3 py-2 text-[#8B1A1A] hover:underline font-semibold transition-colors duration-300 hover:text-[#6B1415]"
+          >
+            Ir a trámite →
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -89,26 +89,52 @@ export default function ConsultaTramitePage() {
     
     setDescargando(true);
     try {
-      // Usar la nueva ruta de API para certificados
-      const response = await fetch(`/api/certificados/${tramite.codigoTramite}`);
+      console.log('Iniciando descarga de:', `/descargar-certificado/${tramite.codigoTramite}`);
+      
+      // Usar fetch con mode cors y sin credenciales primero para ver qué recibimos
+      const response = await fetch(`/descargar-certificado/${tramite.codigoTramite}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', {
+        contentType: response.headers.get('content-type'),
+        contentDisposition: response.headers.get('content-disposition'),
+        contentLength: response.headers.get('content-length')
+      });
       
       if (!response.ok) {
-        throw new Error('No se pudo descargar el certificado');
+        throw new Error(`HTTP ${response.status}`);
       }
 
+      // Obtener el blob
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      console.log('Blob recibido:', {
+        type: blob.type,
+        size: blob.size
+      });
+
+      // Crear URL y descargar
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `certificado_${tramite.codigoTramite}.pdf`;
       document.body.appendChild(a);
+      console.log('Descargando archivo:', a.download);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Limpiar
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setDescargando(false);
+      }, 100);
     } catch (err) {
-      console.error('Error al descargar:', err);
+      console.error('Error completo:', err);
       alert('Error al descargar el certificado. Intenta más tarde.');
-    } finally {
       setDescargando(false);
     }
   };
@@ -162,20 +188,9 @@ export default function ConsultaTramitePage() {
               <div className="h-2 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415]"></div>
               
               <div className="p-8">
-                {/* Título y Código */}
+                {/* Título */}
                 <div className="mb-8">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{tramite.nombre_tramite}</h1>
-                  <div className="flex items-center gap-3 mt-4 flex-wrap">
-                    <span className="text-sm font-semibold text-black bg-gray-100 px-4 py-2 rounded-full">
-                      Código: {tramite.codigoTramite}
-                    </span>
-                    <button
-                      onClick={() => copiarCodigo(tramite.codigoTramite)}
-                      className="text-sm font-semibold text-[#8B1A1A] hover:bg-red-50 px-4 py-2 rounded-full transition-colors"
-                    >
-                      {copiado ? '✓ Copiado' : '📋 Copiar código'}
-                    </button>
-                  </div>
                 </div>
 
                 {/* Estado */}
@@ -196,11 +211,6 @@ export default function ConsultaTramitePage() {
 
                 {/* Información General */}
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-sm font-semibold text-blue-900 uppercase tracking-wider mb-2">ID Trámite</h3>
-                    <p className="text-2xl font-bold text-blue-700">{tramite.id_tramite}</p>
-                  </div>
-                  
                   <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                     <h3 className="text-sm font-semibold text-purple-900 uppercase tracking-wider mb-2">Costo</h3>
                     <p className="text-2xl font-bold text-purple-700">${tramite.costo.toLocaleString('es-CO')}</p>
@@ -217,10 +227,7 @@ export default function ConsultaTramitePage() {
                     </p>
                   </div>
 
-                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <h3 className="text-sm font-semibold text-orange-900 uppercase tracking-wider mb-2">ID Solicitud</h3>
-                    <p className="text-2xl font-bold text-orange-700">{tramite.id_solicitud}</p>
-                  </div>
+                  
                 </div>
 
                 {/* Línea de tiempo de estados */}

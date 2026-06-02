@@ -217,15 +217,7 @@ export default function HistorialPage() {
                         className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden"
                       >
                         <div className="p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                            {/* Código Trámite */}
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                                Código
-                              </p>
-                              <p className="text-lg font-bold text-gray-900 break-all">{tramite.codigo_tramite}</p>
-                            </div>
-
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                             {/* Tipo Trámite */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">

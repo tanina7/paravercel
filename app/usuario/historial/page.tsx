@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react'; // 🔥 Importamos el QR
 import Header from '../components/Header';
 
 interface TramiteHistorial {
@@ -34,8 +35,11 @@ export default function HistorialPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [baseUrl, setBaseUrl] = useState(''); // 🔥 Guardamos la URL base
 
   useEffect(() => {
+    setBaseUrl(window.location.origin);
+
     const obtenerHistorial = async () => {
       try {
         setLoading(true);
@@ -57,7 +61,6 @@ export default function HistorialPage() {
     obtenerHistorial();
   }, []);
 
-  // Manejar descarga de factura
   const handleDescargarFactura = async (id_solicitud: number) => {
     try {
       const response = await fetch(`/api/usuario/descargar-documento-factura?id_solicitud=${id_solicitud}`);
@@ -68,7 +71,6 @@ export default function HistorialPage() {
         return;
       }
 
-      // Obtener el nombre del archivo desde el header
       const contentDisposition = response.headers.get('content-disposition');
       let filename = `factura-${id_solicitud}.pdf`;
       
@@ -79,7 +81,6 @@ export default function HistorialPage() {
         }
       }
 
-      // Descargar el archivo
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -95,20 +96,16 @@ export default function HistorialPage() {
     }
   };
 
-  // Filtrar trámites por estado
   const tramitesFiltrados = filtroEstado
     ? tramites.filter(t => t.nombre_estado === filtroEstado)
     : tramites;
 
-  // Obtener estados únicos
   const estados = Array.from(new Set(tramites.map(t => t.nombre_estado)));
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Header */}
       <Header />
 
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white py-12 sm:py-16">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
@@ -135,7 +132,6 @@ export default function HistorialPage() {
         </div>
       </section>
 
-      {/* Content Section */}
       <section className="flex-grow py-12 sm:py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {error && (
@@ -167,7 +163,6 @@ export default function HistorialPage() {
             </div>
           ) : (
             <>
-              {/* Filter Section */}
               <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-sm font-bold text-black uppercase tracking-wider mb-4">Filtrar por Estado</h3>
                 <div className="flex flex-wrap gap-2">
@@ -202,8 +197,7 @@ export default function HistorialPage() {
                 </div>
               </div>
 
-              {/* Tramites List */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {tramitesFiltrados.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-black font-medium">No hay trámites con este estado</p>
@@ -211,14 +205,18 @@ export default function HistorialPage() {
                 ) : (
                   tramitesFiltrados.map((tramite) => {
                     const config = estadoConfig[tramite.nombre_estado];
+                    
+                    // 🔥 Calculamos el código oficial único
+                    const anio = new Date(tramite.fecha_creacion).getFullYear();
+                    const codigoOficial = `UV-${anio}-${tramite.codigo_tramite}`;
+
                     return (
                       <div
                         key={tramite.id_tramite}
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden"
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden flex flex-col"
                       >
                         <div className="p-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                            {/* Tipo Trámite */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 Tipo de Trámite
@@ -226,7 +224,6 @@ export default function HistorialPage() {
                               <p className="text-lg font-semibold text-black">{tramite.tipo_tramite}</p>
                             </div>
 
-                            {/* Fecha */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 Fecha de Solicitud
@@ -240,7 +237,6 @@ export default function HistorialPage() {
                               </p>
                             </div>
 
-                            {/* Estado */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 Estado
@@ -252,29 +248,44 @@ export default function HistorialPage() {
                             </div>
                           </div>
 
-                          {/* Botones de Acción */}
+                          {/* 🔥 NUEVO BLOQUE: QR Y CÓDIGO OFICIAL SI ESTÁ FINALIZADO 🔥 */}
+                          {tramite.id_estado === 7 && (
+                            <div className="mt-4 mb-2 bg-green-50 rounded-xl border border-green-200 p-4 flex flex-col sm:flex-row items-center gap-5 shadow-sm">
+                              <div className="bg-white p-2 border border-green-200 rounded-xl shadow-sm flex-shrink-0">
+                                {baseUrl && <QRCodeSVG value={`${baseUrl}/verificar/${encodeURIComponent(codigoOficial)}`} size={80} level="H" />}
+                              </div>
+                              <div className="flex-1 text-center sm:text-left">
+                                <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold mb-2 border border-green-300">
+                                  <span>✅</span> Documento Oficial Emitido
+                                </div>
+                                <p className="text-sm text-gray-700 mb-2 font-medium">Escanea este QR o utiliza el código de seguridad:</p>
+                                <div className="bg-white px-3 py-1.5 rounded-md border border-gray-200 font-mono text-sm font-bold text-gray-800 shadow-sm inline-block">
+                                  {codigoOficial}
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+                                <Link
+                                  href={`/verificar/${encodeURIComponent(codigoOficial)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full sm:w-auto px-5 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                                >
+                                  <span>📄</span> Ver y Descargar
+                                </Link>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Botones de Acción Generales */}
                           <div className="flex gap-3 pt-4 border-t border-gray-100 flex-wrap">
-                            <Link
-                              href={`/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`}
-                              className="flex-1 px-4 py-2 bg-[#8B1A1A] text-white font-semibold rounded-lg hover:bg-[#701515] transition-all flex items-center justify-center gap-2 min-w-max"
-                            >
-                              <span>Ver Detalles</span>
-                              <span>→</span>
-                            </Link>
-                            {tramite.id_estado === 7 && (
-                              <Link
-                                href={`/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`}
-                                className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 min-w-max"
-                              >
-                                <span>⏳ Descargar Certificado</span>
-                              </Link>
-                            )}
+                            {/* 🔥 BOTÓN "VER DETALLES" ELIMINADO 🔥 */}
+                            
                             <button
                               onClick={() => handleDescargarFactura(tramite.id_solicitud)}
-                              className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 min-w-max"
+                              className="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
                               title="Descargar factura del trámite"
                             >
-                              <span>📄 Descargar Factura</span>
+                              <span>🧾 Descargar Factura</span>
                             </button>
                           </div>
                         </div>

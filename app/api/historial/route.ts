@@ -17,44 +17,54 @@ export async function GET() {
         es.carrera,
         es.subsede AS sede,
         t.fecha_creacion,
-
+        
         (
           SELECT COALESCE(
             JSON_ARRAYAGG(
               JSON_OBJECT(
-                'id_archivo', a.id_archivo,
-                'tipo_archivo', a.tipo_archivo,
-                'archivo', a.archivo,
-                'fecha_subida', a.fecha_subida
+                'id_archivo', f.id_archivo,
+                'tipo_archivo', f.tipo_archivo,
+                'archivo', f.archivo
               )
             ),
-            JSON_ARRAY()
+            '[]'
           )
-          FROM archivos_tramite a
-          WHERE a.id_solicitud = s.id_solicitud
+          FROM (
+            /* 1. Traemos los requisitos iniciales del estudiante */
+            SELECT 
+              id_archivo, 
+              tipo_archivo, 
+              archivo 
+            FROM archivos_tramite 
+            WHERE id_solicitud = s.id_solicitud
+            
+            UNION ALL
+            
+            /* 2. Traemos LOS DOCUMENTOS OFICIALES EMITIDOS POR TI */
+            /* 🔥 CORRECCIÓN 1: Filtramos los duplicados generados por el backend 🔥 */
+            SELECT 
+              id_documento AS id_archivo, 
+              tipo_documento AS tipo_archivo, 
+              ruta_archivo AS archivo 
+            FROM documentos_adjuntos 
+            WHERE id_tramite = t.id_tramite
+              AND tipo_documento NOT IN ('Certificado PDF Oficial', 'Respaldo Adicional')
+          ) f
         ) AS archivos
 
       FROM tramites t
-
-      JOIN estados_tramite e 
-        ON t.id_estado = e.id_estado
-
-      JOIN solicitudes_tramite s 
-        ON t.id_solicitud = s.id_solicitud
-
-      /* 🔥 AQUÍ ESTÁ LA CORRECCIÓN DE LOS JOINS 🔥 */
-      JOIN usuarios u 
-        ON s.id_estudiante = u.id_usuario
-
-      LEFT JOIN estudiantes es 
-        ON u.id_usuario = es.id_usuario
-
-      JOIN tipos_tramite tt 
-        ON t.id_tipo = tt.id_tipo
-
+      JOIN estados_tramite e ON t.id_estado = e.id_estado
+      JOIN solicitudes_tramite s ON t.id_solicitud = s.id_solicitud
+      JOIN usuarios u ON s.id_estudiante = u.id_usuario
+      LEFT JOIN estudiantes es ON u.id_usuario = es.id_usuario
+      JOIN tipos_tramite tt ON t.id_tipo = tt.id_tipo
+      
       WHERE e.nombre_estado IN ('Listo para Impresion', 'Finalizado')
-
-      ORDER BY t.fecha_creacion DESC
+      
+      /* 🔥 CORRECCIÓN 2: Ordenar por el último documento emitido 🔥 */
+      ORDER BY 
+        COALESCE((SELECT MAX(id_documento) FROM documentos_adjuntos WHERE id_tramite = t.id_tramite), 0) DESC, 
+        t.id_tramite DESC
     `);
 
     return NextResponse.json(rows);

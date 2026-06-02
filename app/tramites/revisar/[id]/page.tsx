@@ -34,10 +34,12 @@ export default function RevisarTramitePage() {
   // --- ESTADOS ---
   const [firmas, setFirmas] = useState<FirmaData[]>([]);
   const [firmasSeleccionadas, setFirmasSeleccionadas] = useState<string[]>([]);
-  // AHORA SOPORTA MÚLTIPLES ARCHIVOS
-  const [archivosRespaldo, setArchivosRespaldo] = useState<File[]>([]);
   const [datosTramite, setDatosTramite] = useState<TramiteData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [busquedaFirma, setBusquedaFirma] = useState('');
+  // NUEVO: Estado para controlar si mostramos todas las firmas o solo las 3 primeras
+  const [mostrarTodasFirmas, setMostrarTodasFirmas] = useState(false);
 
   // Función para traducir el rol a texto
   const obtenerNombreRol = (id_rol?: number) => {
@@ -70,20 +72,6 @@ export default function RevisarTramitePage() {
       .finally(() => setLoading(false));
   }, [tramiteId]);
 
-  // --- FUNCIONES PARA MÚLTIPLES ARCHIVOS ---
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const nuevosArchivos = Array.from(e.target.files);
-      setArchivosRespaldo((prev) => [...prev, ...nuevosArchivos]);
-    }
-    // Reseteamos el input para que permita subir el mismo archivo si se borró por error
-    e.target.value = '';
-  };
-
-  const eliminarArchivo = (indexAEliminar: number) => {
-    setArchivosRespaldo((prev) => prev.filter((_, index) => index !== indexAEliminar));
-  };
-
   const toggleFirma = (id: string) => {
     setFirmasSeleccionadas((prev) => 
       prev.includes(id) 
@@ -104,11 +92,23 @@ export default function RevisarTramitePage() {
       });
       return;
     }
-    // Aquí puedes manejar la subida de los 'archivosRespaldo' a tu API en el futuro
     router.push(`/tramites/emitir/${tramiteId}?firmasIds=${firmasSeleccionadas.join(',')}`);
   };
 
   const firmasActuales = firmas.filter(f => firmasSeleccionadas.includes(f.id_usuario.toString()));
+
+  // Lógica de filtrado
+  const firmasFiltradas = firmas.filter(f => {
+    const termino = busquedaFirma.toLowerCase();
+    return (
+      f.nombre_completo.toLowerCase().includes(termino) ||
+      obtenerNombreRol(f.id_rol).toLowerCase().includes(termino)
+    );
+  });
+
+  // NUEVO: Calculamos cuántas firmas mostrar (3 o todas)
+  const firmasAMostrar = mostrarTodasFirmas ? firmasFiltradas : firmasFiltradas.slice(0, 3);
+  const firmasRestantes = firmasFiltradas.length - 3;
 
   // --- RENDERIZADO CONDICIONAL ---
   if (loading) {
@@ -293,111 +293,97 @@ export default function RevisarTramitePage() {
             </div>
           </div>
 
-          {/* Tarjeta 2: Selector de Firmas */}
+          {/* Tarjeta 2: Selector de Firmas (CON BUSCADOR Y DESPLEGABLE) */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-center mb-5">
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#8B1A1A]">ink_pen</span> 
                 Asignar Firmas
               </h3>
               <span className="bg-[#8B1A1A] text-white text-[10px] font-black px-2 py-1 rounded-full">
-                {firmasSeleccionadas.length}
+                {firmasSeleccionadas.length} seleccionadas
               </span>
             </div>
             
-            <p className="text-xs text-gray-500 mb-4 font-medium">Seleccione las autoridades requeridas para este documento:</p>
-            
-            <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
-              {firmas.map((firma) => {
-                const isSelected = firmasSeleccionadas.includes(firma.id_usuario.toString());
-                
-                return (
-                  <div 
-                    key={firma.id_usuario}
-                    onClick={() => toggleFirma(firma.id_usuario.toString())}
-                    className={`relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 group ${
-                      isSelected 
-                        ? 'border-[#8B1A1A] bg-red-50/20 shadow-md' 
-                        : 'border-gray-100 hover:border-gray-300 bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-colors border-2 ${
-                      isSelected ? 'border-[#8B1A1A] bg-[#8B1A1A]' : 'border-gray-300 bg-white group-hover:border-gray-400'
-                    }`}>
-                      {isSelected && <span className="material-symbols-outlined text-white text-[14px] font-bold">check</span>}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-gray-900 truncate">{firma.nombre_completo}</p>
-                      <p className={`text-[10px] uppercase font-bold mt-0.5 ${isSelected ? 'text-[#8B1A1A]' : 'text-gray-500'}`}>
-                        {obtenerNombreRol(firma.id_rol)}
-                      </p>
-                    </div>
-
-                    <img 
-                      src={firma.firma_digital_url} 
-                      alt="Miniatura" 
-                      className={`h-8 w-16 object-contain mix-blend-multiply transition-opacity ${isSelected ? 'opacity-100' : 'opacity-30'}`} 
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                );
-              })}
+            <div className="relative mb-4">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="material-symbols-outlined text-gray-400 text-sm">search</span>
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o cargo..."
+                value={busquedaFirma}
+                onChange={(e) => setBusquedaFirma(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-800 focus:bg-white focus:border-[#8B1A1A] focus:ring-1 focus:ring-[#8B1A1A] outline-none transition-all placeholder-gray-400"
+              />
             </div>
-          </div>
+            
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar transition-all duration-300">
+              {firmasAMostrar.length > 0 ? (
+                <>
+                  {firmasAMostrar.map((firma) => {
+                    const isSelected = firmasSeleccionadas.includes(firma.id_usuario.toString());
+                    
+                    return (
+                      <div 
+                        key={firma.id_usuario}
+                        onClick={() => toggleFirma(firma.id_usuario.toString())}
+                        className={`relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 group ${
+                          isSelected 
+                            ? 'border-[#8B1A1A] bg-red-50/20 shadow-md' 
+                            : 'border-gray-100 hover:border-gray-300 bg-white hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center transition-colors border-2 ${
+                          isSelected ? 'border-[#8B1A1A] bg-[#8B1A1A]' : 'border-gray-300 bg-white group-hover:border-gray-400'
+                        }`}>
+                          {isSelected && <span className="material-symbols-outlined text-white text-[14px] font-bold">check</span>}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-gray-900 truncate">{firma.nombre_completo}</p>
+                          <p className={`text-[10px] uppercase font-bold mt-0.5 ${isSelected ? 'text-[#8B1A1A]' : 'text-gray-500'}`}>
+                            {obtenerNombreRol(firma.id_rol)}
+                          </p>
+                        </div>
 
-          {/* Tarjeta 3: Adjuntar PDF (MÚLTIPLES ARCHIVOS) */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                <span className="material-symbols-outlined text-gray-500">upload_file</span> 
-                Adjuntar Respaldos
-              </h3>
-              {archivosRespaldo.length > 0 && (
-                <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded">
-                  {archivosRespaldo.length} {archivosRespaldo.length === 1 ? 'archivo' : 'archivos'}
-                </span>
+                        <img 
+                          src={firma.firma_digital_url} 
+                          alt="Miniatura" 
+                          className={`h-8 w-16 object-contain mix-blend-multiply transition-opacity ${isSelected ? 'opacity-100' : 'opacity-30'}`} 
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {/* BOTÓN PARA DESPLEGAR/OCULTAR EL RESTO DE FIRMAS */}
+                  {firmasFiltradas.length > 3 && (
+                    <button
+                      onClick={() => setMostrarTodasFirmas(!mostrarTodasFirmas)}
+                      className="w-full py-2.5 mt-2 flex items-center justify-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#8B1A1A] hover:bg-red-50 rounded-xl transition-colors border border-dashed border-gray-300"
+                    >
+                      {mostrarTodasFirmas ? (
+                        <>
+                          Mostrar menos firmas
+                          <span className="material-symbols-outlined text-[16px]">expand_less</span>
+                        </>
+                      ) : (
+                        <>
+                          Ver {firmasRestantes} firmas más
+                          <span className="material-symbols-outlined text-[16px]">expand_more</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-6 text-gray-400 flex flex-col items-center">
+                  <span className="material-symbols-outlined text-3xl mb-1 opacity-50">search_off</span>
+                  <p className="text-xs">No se encontraron firmas</p>
+                </div>
               )}
             </div>
-
-            <label className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all group ${
-              archivosRespaldo.length > 0 ? 'border-gray-200 hover:border-[#8B1A1A] hover:bg-red-50/30 mb-4' : 'border-gray-300 hover:border-[#8B1A1A] hover:bg-red-50/30'
-            }`}>
-              {/* Añadimos la etiqueta 'multiple' para permitir varios archivos */}
-              <input type="file" accept=".pdf" multiple className="hidden" onChange={handleFileChange} />
-              
-              <div className="flex flex-col items-center text-gray-400 group-hover:text-[#8B1A1A]">
-                <div className="w-12 h-12 bg-gray-50 group-hover:bg-red-50 rounded-full flex items-center justify-center mb-3 transition-colors">
-                  <span className="material-symbols-outlined text-2xl transition-transform group-hover:-translate-y-1">cloud_upload</span>
-                </div>
-                <p className="font-bold text-sm text-gray-700">Seleccionar PDFs</p>
-                <p className="text-[10px] uppercase tracking-wider mt-1 font-medium">Puede subir varios archivos</p>
-              </div>
-            </label>
-
-            {/* LISTA VISUAL DE ARCHIVOS SELECCIONADOS */}
-            {archivosRespaldo.length > 0 && (
-              <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
-                {archivosRespaldo.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 border border-gray-200 p-2 rounded-lg animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <span className="material-symbols-outlined text-green-600 text-lg shrink-0">check_circle</span>
-                      <p className="text-xs font-bold text-gray-700 truncate" title={file.name}>{file.name}</p>
-                    </div>
-                    <button 
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        eliminarArchivo(index); 
-                      }}
-                      className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors shrink-0"
-                      title="Quitar archivo"
-                    >
-                      <span className="material-symbols-outlined text-[16px] block">close</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* BOTÓN DE ACCIÓN PRINCIPAL */}

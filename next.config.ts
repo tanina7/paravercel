@@ -1,11 +1,30 @@
 import type { NextConfig } from "next";
 import path from "path";
+import os from "os";
+
+// 🔥 MAGIA: Función que busca automáticamente tu IP de WiFi/Cable
+function getLocalIp() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      // Filtramos para obtener solo la IP local (IPv4) que no sea interna
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1'; // De respaldo por si estás sin internet
+}
+
+const miIP = getLocalIp();
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  
-  // 🔥 AQUÍ AGREGAMOS LOS PERMISOS PARA TU RED LOCAL
-  allowedDevOrigins: ['192.168.0.6', 'http://192.168.0.6:3000', 'localhost'],
+  // Le pasamos la IP que detectó automáticamente
+  allowedDevOrigins: [
+    'localhost',
+    miIP,
+    `http://${miIP}:3000`
+  ],
 
   turbopack: {
     root: path.resolve(__dirname),

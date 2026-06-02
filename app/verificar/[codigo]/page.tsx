@@ -32,13 +32,21 @@ export default function VerificarDocumentoPage() {
     if (!codigoTramite) return;
     setBaseUrl(window.location.origin);
 
-    // Aquí llamaremos a una nueva API que busca por CÓDIGO en vez de ID
     const cargarTramite = fetch(`/api/verificar/${codigoTramite}`).then(res => res.json());
     const cargarFirmas = fetch('/api/obtener-firmas').then(res => res.json());
 
     Promise.all([cargarTramite, cargarFirmas])
       .then(([dataTramite, dataFirmas]) => {
         if (dataTramite.success) {
+          // Parseamos los archivos si vienen como JSON string
+          let archivosParseados = [];
+          if (typeof dataTramite.data.archivos === 'string') {
+            try { archivosParseados = JSON.parse(dataTramite.data.archivos); } catch(e) {}
+          } else if (Array.isArray(dataTramite.data.archivos)) {
+            archivosParseados = dataTramite.data.archivos;
+          }
+          dataTramite.data.archivos = archivosParseados.filter((doc: any) => doc && doc.archivo);
+
           setTramite(dataTramite.data);
         } else {
           setError(true);
@@ -99,7 +107,7 @@ export default function VerificarDocumentoPage() {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen space-y-4 bg-gray-50">
-        <span className="material-symbols-outlined text-5xl animate-spin text-green-600"></span>
+        <span className="material-symbols-outlined text-5xl animate-spin text-green-600">sync</span>
         <p className="text-gray-500 font-medium">Verificando en la base de datos de UNIVALLE...</p>
       </div>
     );
@@ -108,7 +116,7 @@ export default function VerificarDocumentoPage() {
   if (error || !tramite) {
     return (
       <div className="flex flex-col justify-center items-center h-screen space-y-4 bg-gray-50 px-4 text-center">
-        <span className="material-symbols-outlined text-6xl text-red-500"></span>
+        <span className="material-symbols-outlined text-6xl text-red-500">error</span>
         <h2 className="text-2xl font-bold text-gray-800">Documento No Encontrado o Inválido</h2>
         <p className="text-gray-600 max-w-md">
           El código <span className="font-mono font-bold">{codigoTramite}</span> no existe en nuestros registros o el documento ha sido invalidado.
@@ -120,7 +128,6 @@ export default function VerificarDocumentoPage() {
     );
   }
 
-  // Filtrado de firmas
   let firmasUsadas = firmasDB.filter(f => {
     if (!tramite.firma_digital_url) return false;
     const guardadoStr = String(tramite.firma_digital_url);
@@ -134,6 +141,12 @@ export default function VerificarDocumentoPage() {
   const urlVerificacion = `${baseUrl}/verificar/${codigoTramite}`;
   const fechaHoy = new Date(tramite.fecha_cierre || Date.now()).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  // Excluimos duplicados internos para no confundir al usuario que verifica
+  const documentosValidos = tramite.archivos?.filter((doc: any) => {
+    const tipo = String(doc.tipo_archivo || '');
+    return !tipo.includes('Certificado PDF Oficial'); 
+  }) || [];
+
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
@@ -146,13 +159,13 @@ export default function VerificarDocumentoPage() {
         }
       `}} />
 
-      <div className="max-w-7xl mx-auto p-6 animate-in fade-in duration-500 bg-[#f8fafc] min-h-screen">
+      <div className="max-w-7xl mx-auto p-6 animate-in fade-in duration-500 bg-[#f8fafc] min-h-screen pb-20">
         
         {/* ENCABEZADO PÚBLICO */}
         <div className="flex flex-col items-center justify-center mb-8 space-y-2">
-          <span className="material-symbols-outlined text-5xl text-green-500">erificado</span>
-          <h1 className="text-2xl font-bold text-gray-900">Documento Verificado Exitosamente</h1>
-          <p className="text-gray-500">Este certificado es auténtico y está registrado en la base de datos de UNIVALLE.</p>
+          <span className="material-symbols-outlined text-5xl text-green-500">verified</span>
+          <h1 className="text-2xl font-bold text-gray-900 text-center">Documento Verificado Exitosamente</h1>
+          <p className="text-gray-500 text-center">Este certificado es auténtico y está registrado en la base de datos de UNIVALLE.</p>
         </div>
 
         <div className="flex flex-col items-center">
@@ -249,16 +262,56 @@ export default function VerificarDocumentoPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[210mm] mt-6 justify-center print:hidden">
+          {/* =======================================================
+              NUEVA SECCIÓN: ARCHIVOS RESPALDO DEL EXPEDIENTE 
+          ======================================================= */}
+          {documentosValidos.length > 0 && (
+            <div className="w-full max-w-[210mm] mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm print:hidden">
+              <h3 className="text-lg font-black text-gray-900 mb-1 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#8B1A1A]">folder_open</span>
+                Expediente Digital Adjunto
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                Documentación adicional vinculada a este trámite oficial.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {documentosValidos.map((doc: any, i: number) => (
+                  <a 
+                    key={i} 
+                    href={doc.archivo} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-lg transition-colors group"
+                  >
+                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center border border-gray-200 group-hover:border-red-300">
+                      <span className="material-symbols-outlined text-gray-400 group-hover:text-[#8B1A1A]">
+                        {doc.archivo?.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'description'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-800 group-hover:text-[#8B1A1A] truncate">
+                        {doc.tipo_archivo || `Documento Adjunto ${i + 1}`}
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Click para ver original</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* BOTONES DE ACCIÓN PUBLICOS */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[210mm] mt-8 justify-center print:hidden">
             <button onClick={() => window.print()} className="bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-8 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-xl"></span> Imprimir
+              <span className="material-symbols-outlined text-xl">print</span> Imprimir
             </button>
             <button onClick={handleDescargarPDF} disabled={isDownloading} className={`bg-[#8B1A1A] hover:bg-[#6c1414] text-white font-black py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              <span className={`material-symbols-outlined text-xl ${isDownloading ? 'animate-bounce' : ''}`}></span>
+              <span className={`material-symbols-outlined text-xl ${isDownloading ? 'animate-bounce' : 'download'}`}></span>
               {isDownloading ? 'Generando PDF...' : 'Descargar Oficial'}
             </button>
             <button onClick={() => router.push('/usuario/landing')} className="bg-gray-900 hover:bg-gray-800 text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-xl"></span> Inicio
+              <span className="material-symbols-outlined text-xl">home</span> Inicio
             </button>
           </div>
 

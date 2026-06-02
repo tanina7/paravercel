@@ -269,7 +269,7 @@ export default function LandingPage() {
       <section className="py-16 bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center max-w-4xl mx-auto">
-            <span className="material-symbols-outlined text-5xl text-green-600 mb-4">verified</span>
+            <span className="material-symbols-outlined text-5xl text-green-600 mb-4"></span>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Verificar Autenticidad de Documento
             </h2>
@@ -289,7 +289,7 @@ export default function LandingPage() {
                 type="submit"
                 className="px-8 py-3 rounded-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
               >
-                <span className="material-symbols-outlined">search</span>
+                <span className="material-symbols-outlined"></span>
                 Validar Documento
               </button>
             </form>
@@ -668,7 +668,7 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
             </div>
             <div className="flex-1 text-center md:text-left">
               <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1 rounded-md text-xs font-bold mb-3 border border-green-300">
-                <span className="material-symbols-outlined text-[16px]">verified</span> 
+                <span className="material-symbols-outlined text-[16px]"></span> 
                 Documento Emitido
               </div>
               <h4 className="text-xl font-black text-gray-900 mb-2">Tu certificado está listo</h4>

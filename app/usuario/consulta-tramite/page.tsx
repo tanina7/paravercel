@@ -34,7 +34,6 @@ export default function ConsultaTramitePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
-  const [descargando, setDescargando] = useState(false);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -84,58 +83,38 @@ export default function ConsultaTramitePage() {
     };
   };
 
-  const handleDescargarCertificado = async () => {
-    if (!tramite) return;
-    
-    setDescargando(true);
+  const handleDescargarFactura = async (id_solicitud: number) => {
     try {
-      console.log('Iniciando descarga de:', `/descargar-certificado/${tramite.codigoTramite}`);
-      
-      // Usar fetch con mode cors y sin credenciales primero para ver qué recibimos
-      const response = await fetch(`/descargar-certificado/${tramite.codigoTramite}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf'
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', {
-        contentType: response.headers.get('content-type'),
-        contentDisposition: response.headers.get('content-disposition'),
-        contentLength: response.headers.get('content-length')
-      });
+      const response = await fetch(`/api/usuario/descargar-documento-factura?id_solicitud=${id_solicitud}`);
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al descargar la factura');
+        return;
       }
 
-      // Obtener el blob
-      const blob = await response.blob();
-      console.log('Blob recibido:', {
-        type: blob.type,
-        size: blob.size
-      });
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = `factura-${id_solicitud}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
 
-      // Crear URL y descargar
-      const url = URL.createObjectURL(blob);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `certificado_${tramite.codigoTramite}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
-      console.log('Descargando archivo:', a.download);
       a.click();
-      
-      // Limpiar
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setDescargando(false);
-      }, 100);
-    } catch (err) {
-      console.error('Error completo:', err);
-      alert('Error al descargar el certificado. Intenta más tarde.');
-      setDescargando(false);
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error descargando factura:', error);
+      alert('Error al descargar la factura');
     }
   };
 
@@ -264,20 +243,14 @@ export default function ConsultaTramitePage() {
 
             {/* Acciones */}
             <div className="flex flex-col sm:flex-row gap-4">
-              {tramite.id_estado === 7 && (
-                <button
-                  onClick={handleDescargarCertificado}
-                  disabled={descargando}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-                    descargando
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-lg active:scale-95'
-                  }`}
-                >
-                  <span>{descargando ? '⏳' : '📥'}</span>
-                  {descargando ? 'Descargando...' : 'Descargar Certificado'}
-                </button>
-              )}
+              <button
+                onClick={() => handleDescargarFactura(tramite.id_solicitud)}
+                className="flex-1 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+                title="Descargar factura del trámite"
+              >
+                <span>📄</span>
+                Descargar Factura
+              </button>
               <Link
                 href="/usuario/landing"
                 className="flex-1 px-6 py-3 rounded-lg bg-[#8B1A1A] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"

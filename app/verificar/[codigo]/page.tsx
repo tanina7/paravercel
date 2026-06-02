@@ -107,7 +107,7 @@ export default function VerificarDocumentoPage() {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen space-y-4 bg-gray-50">
-        <span className="material-symbols-outlined text-5xl animate-spin text-green-600">sync</span>
+        <span className="material-symbols-outlined text-5xl animate-spin text-green-600"></span>
         <p className="text-gray-500 font-medium">Verificando en la base de datos de UNIVALLE...</p>
       </div>
     );
@@ -163,7 +163,7 @@ export default function VerificarDocumentoPage() {
         
         {/* ENCABEZADO PÚBLICO */}
         <div className="flex flex-col items-center justify-center mb-8 space-y-2">
-          <span className="material-symbols-outlined text-5xl text-green-500">verified</span>
+          <span className="material-symbols-outlined text-5xl text-green-500">Verificado</span>
           <h1 className="text-2xl font-bold text-gray-900 text-center">Documento Verificado Exitosamente</h1>
           <p className="text-gray-500 text-center">Este certificado es auténtico y está registrado en la base de datos de UNIVALLE.</p>
         </div>
@@ -304,14 +304,14 @@ export default function VerificarDocumentoPage() {
           {/* BOTONES DE ACCIÓN PUBLICOS */}
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[210mm] mt-8 justify-center print:hidden">
             <button onClick={() => window.print()} className="bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-8 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-xl">print</span> Imprimir
+              <span className="material-symbols-outlined text-xl"></span> Imprimir
             </button>
             <button onClick={handleDescargarPDF} disabled={isDownloading} className={`bg-[#8B1A1A] hover:bg-[#6c1414] text-white font-black py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <span className={`material-symbols-outlined text-xl ${isDownloading ? 'animate-bounce' : 'download'}`}></span>
               {isDownloading ? 'Generando PDF...' : 'Descargar Oficial'}
             </button>
             <button onClick={() => router.push('/usuario/landing')} className="bg-gray-900 hover:bg-gray-800 text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 flex-1 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-xl">home</span> Inicio
+              <span className="material-symbols-outlined text-xl"></span> Inicio
             </button>
           </div>
 

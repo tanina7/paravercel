@@ -261,14 +261,6 @@ export default function HistorialPage() {
                               <span>Ver Detalles</span>
                               <span>→</span>
                             </Link>
-                            {tramite.id_estado === 7 && (
-                              <Link
-                                href={`/usuario/consulta-tramite?codigo=${encodeURIComponent(tramite.codigo_tramite)}`}
-                                className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 min-w-max"
-                              >
-                                <span>⏳ Descargar Certificado</span>
-                              </Link>
-                            )}
                             <button
                               onClick={() => handleDescargarFactura(tramite.id_solicitud)}
                               className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 min-w-max"

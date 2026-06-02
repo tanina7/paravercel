@@ -1,7 +1,7 @@
 'use client'
 import DashboardCards from './components/DashboardCards';
 import TableSolicitudes from './components/TableSolicitudes';
-
+import Link from "next/link";
 export default function CajeroPage() {
   return (
     <div className="space-y-6">
@@ -9,6 +9,7 @@ export default function CajeroPage() {
       <DashboardCards />
       {/* TABLA */}
       <TableSolicitudes />
+      
     </div>
   );
 }

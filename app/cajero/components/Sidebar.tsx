@@ -49,6 +49,15 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         >
           📜 Historial
         </Link>
+
+        {/* NUEVO: PRECIOS */}
+        <Link
+          href="/cajero/precios"
+          className={linkClass('/cajero/precios')}
+          onClick={() => setOpen(false)}
+        >
+          🏷️ Precios de Trámites
+        </Link>
       </nav>
 
       {/* FOOTER SUTIL */}

@@ -40,7 +40,7 @@ const SUB_SEDES = [
 
 export default function FormularioPage() {
   const router = useRouter();
-  const { items, setSolicitud } = useCarrito();
+  const { items, setSolicitud, vaciarCarrito } = useCarrito();
 
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [carrera, setCarrera] = useState('');
@@ -336,6 +336,10 @@ export default function FormularioPage() {
 
         const pagoResultado = await pagoResponse.json();
         console.log('Comprobante guardado exitosamente:', pagoResultado);
+
+        // Vaciar carrito después de completar la solicitud
+        vaciarCarrito();
+        console.log('✅ Carrito vaciado');
 
         // Guardar información de la solicitud en localStorage
         const datosConfirmacion = {

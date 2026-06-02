@@ -27,23 +27,15 @@ const DOCUMENTOS_POR_TRAMITE: Record<number, string[]> = {
 };
 
 const CARRERAS = [
-  'Ingeniería de Sistemas',
-  'Ingeniería Civil',
-  'Derecho',
-  'Medicina',
-  'Arquitectura',
-  'Contaduría',
-  'Psicología',
-  'Economía',
-  'Marketing',
-  'Ingeniería Industrial',
+  'Medicina','Odontología','Bioquímica y Farmacia','Nutrición y Dietética','Fisioterapia y Kinesiología','Enfermería Clínico-Quirúrgica','Administración de Empresas','Ingeniería Comercial','Ingeniería en Comercio Internacional','Ingeniería Financiera y de Riesgos','Derecho y Ciencias Jurídicas','Psicología','Ciencia de Datos e Inteligencia de Negocios','Ingeniería de Sistemas Informáticos','Ingeniería en Telecomunicaciones','Ingeniería Electrónica','Ingeniería Mecatrónica','Ingeniería Biomédica','Ingeniería Civil','Ingeniería Industrial','Ingeniería en Petróleo, Gas y Energías','Ingeniería Ambiental','Ingeniería de Producción e Innovación','Arquitectura y Urbanismo','Diseño Gráfico y Comunicación Visual','Diseño de Interiores y Paisajismo','Artes Escénicas y Producción','Gastronomía y Chef Ejecutivo','Gestión Turística y Hotelera','Administración en Servicios de Alimentación',
 ];
 
 const SUB_SEDES = [
-  'Central',
-  'Tiquipaya',
   'Cochabamba',
+  'La Paz',
   'Santa Cruz',
+  'Sucre',
+  'Trinidad',
 ];
 
 export default function FormularioPage() {

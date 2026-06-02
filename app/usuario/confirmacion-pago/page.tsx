@@ -16,7 +16,6 @@ interface DatosConfirmacion {
 export default function ConfirmacionPagoPage() {
   const router = useRouter();
   const [datos, setDatos] = useState<DatosConfirmacion | null>(null);
-  const [copiados, setCopiados] = useState<Set<string>>(new Set());
   const [intentoRedireccionar, setIntentoRedireccionar] = useState(false);
 
   useEffect(() => {
@@ -50,16 +49,6 @@ export default function ConfirmacionPagoPage() {
 
     return () => clearTimeout(timeout);
   }, [router]);
-
-  const copiarAlPortapapeles = (codigo: string) => {
-    navigator.clipboard.writeText(codigo);
-    setCopiados(new Set(copiados).add(codigo));
-    setTimeout(() => {
-      const nuevoSet = new Set(copiados);
-      nuevoSet.delete(codigo);
-      setCopiados(nuevoSet);
-    }, 2000);
-  };
 
   if (!datos) {
     return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
@@ -122,51 +111,23 @@ export default function ConfirmacionPagoPage() {
             </div>
           </div>
 
-          {/* Códigos de Seguimiento */}
+          {/* Trámites Solicitados */}
           <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] px-6 py-4">
               <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                🔖 Códigos de Seguimiento
+                📋 Trámites Solicitados
               </h3>
-              <p className="text-green-100 text-sm mt-1">Guarda estos códigos para consultar el estado de tus trámites</p>
             </div>
 
-            <div className="p-6 space-y-4">
-              {datos.tramites.map((tramite, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-sm text-black mb-1">Trámite</p>
-                      <p className="text-lg font-semibold text-gray-900">{tramite.nombre}</p>
-                    </div>
-                    <div className="flex-1 sm:text-right">
-                      <p className="text-sm text-black mb-1">Código de Seguimiento</p>
-                      <div className="flex items-center gap-2 justify-start sm:justify-end">
-                        <code className="bg-gray-100 px-4 py-2 rounded font-mono font-bold text-[#8B1A1A] text-base break-all">
-                          {tramite.codigoTramite}
-                        </code>
-                        <button
-                          onClick={() => copiarAlPortapapeles(tramite.codigoTramite)}
-                          className="p-2 hover:bg-gray-100 rounded transition-colors"
-                          title="Copiar al portapapeles"
-                        >
-                          {copiados.has(tramite.codigoTramite) ? (
-                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5 text-black hover:text-gray-900" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M8 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                              <path d="M15 16.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                              <path d="M3 5a2 2 0 012-2h3.28a1 1 0 00-.684-.949H5a3 3 0 00-3 3v2h3V5zm7.5-2a1 1 0 00-.684.949H11a2 2 0 012 2v2h3V5a3 3 0 00-3-3h-2.5zM13 7H3v8a2 2 0 002 2h8a2 2 0 002-2V7z"></path>
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    </div>
+            <div className="p-6">
+              <div className="space-y-3">
+                {datos.tramites.map((tramite, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-2xl">✓</span>
+                    <p className="text-lg font-semibold text-gray-900">{tramite.nombre}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
@@ -181,9 +142,9 @@ export default function ConfirmacionPagoPage() {
               <div>
                 <h4 className="font-semibold text-yellow-900 mb-2">Información Importante</h4>
                 <ul className="text-sm text-yellow-800 space-y-1">
-                  <li>✓ Guarda tus códigos de seguimiento en un lugar seguro</li>
-                  <li>✓ Usa estos códigos para consultar el estado de tus trámites en la sección "Consulta el estado de tu trámite"</li>
-                  <li>✓ Te enviaremos un correo de confirmación con todos tus datos</li>
+                  <li>✓ Tu pago ha sido procesado correctamente</li>
+                  <li>✓ Recibirás un correo de confirmación con todos tus datos</li>
+                  <li>✓ Puedes consultar el estado de tus trámites en la sección "Tus Trámites Activos"</li>
                   <li>✓ Tiempo estimado de procesamiento: 5-10 días hábiles</li>
                 </ul>
               </div>

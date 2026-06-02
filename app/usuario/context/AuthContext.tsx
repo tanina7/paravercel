@@ -30,10 +30,16 @@ export const AuthProvider = ({ children }: any) => {
           } else {
             console.log('Session verification failed or no user:', data);
             setUser(null);
+            // Limpiar localStorage si no hay sesión válida
+            localStorage.removeItem('carrito-tramites');
+            localStorage.removeItem('solicitud-data');
           }
         } else {
           console.log('Session verification request failed with status:', res.status);
           setUser(null);
+          // Limpiar localStorage si falla la verificación
+          localStorage.removeItem('carrito-tramites');
+          localStorage.removeItem('solicitud-data');
         }
       } catch (err) {
         console.error('Error fetching session:', err);
@@ -54,6 +60,9 @@ export const AuthProvider = ({ children }: any) => {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (res.ok) {
+        // Limpiar localStorage antes de redireccionar
+        localStorage.removeItem('carrito-tramites');
+        localStorage.removeItem('solicitud-data');
         setUser(null);
         window.location.href = '/auth/login';
       }

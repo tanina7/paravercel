@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
 
 import { useCarrito } from '@/app/usuario/context/CarritoContext';
 import Header from '../components/Header';
@@ -68,32 +69,16 @@ const tramitesQuickAccess = [
   },
 ];
 
-const estadoConfig: Record<string, { label: string; color: string }> = {
-  'Recibido': { label: 'Recibido', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-  'Verificando Solvencia': { label: 'Verificando', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-  'Revision Tecnica': { label: 'En revisión', color: 'bg-purple-100 text-purple-800 border-purple-300' },
-  'Pago Pendiente': { label: 'Pago pendiente', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-  'Pagado': { label: 'Pagado', color: 'bg-green-100 text-green-800 border-green-300' },
-  'Listo para Impresion': { label: 'Listo', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
-  'Finalizado': { label: 'Finalizado', color: 'bg-green-200 text-green-900 border-green-400' },
-  'Rechazado': { label: 'Rechazado', color: 'bg-red-100 text-red-800 border-red-300' },
-};
-
 export default function LandingPage() {
   const router = useRouter();
   const [codigoTramite, setCodigoTramite] = useState('');
-  
-  // --- NUEVO ESTADO AÑADIDO PARA TU APARTADO ---
   const [codigoVerificacion, setCodigoVerificacion] = useState('');
-  // ----------------------------------------------
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tramitesActivos, setTramitesActivos] = useState<TramiteActivo[]>([]);
   const [loadingTramites, setLoadingTramites] = useState(true);
-  const [errorTramites, setErrorTramites] = useState('');
   const [expandedTramitesSection, setExpandedTramitesSection] = useState(false);
 
-  // Función para obtener trámites activos
   const obtenerTramitesActivos = async () => {
     try {
       setLoadingTramites(true);
@@ -114,11 +99,9 @@ export default function LandingPage() {
     }
   };
 
-  // Obtener trámites activos al cargar y cuando la ventana obtiene foco
   useEffect(() => {
     obtenerTramitesActivos();
 
-    // Recargar trámites cuando la ventana obtiene foco (cuando vuelve del formulario)
     const handleFocus = () => {
       obtenerTramitesActivos();
     };
@@ -127,7 +110,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  // Consulta original de tu compañera
   const handleConsultar = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -136,25 +118,20 @@ export default function LandingPage() {
       return;
     }
 
-    // Redireccionar a la página de consulta con el código como parámetro
     router.push(`/usuario/consulta-tramite?codigo=${encodeURIComponent(codigoTramite)}`);
     setCodigoTramite('');
   };
 
-  // --- NUEVA FUNCIÓN PARA TU APARTADO ---
   const handleVerificarDocumento = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!codigoVerificacion.trim()) {
       alert('Por favor ingresa el código de verificación del documento');
       return;
     }
-    // Redirecciona a la página de verificación que creamos
     router.push(`/verificar/${encodeURIComponent(codigoVerificacion.trim())}`);
     setCodigoVerificacion('');
   };
-  // ---------------------------------------
 
-  // Carruseel navigation
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % tramitesQuickAccess.length);
   };
@@ -286,15 +263,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      
-
       {/* =========================================================
-          NUEVO APARTADO: VERIFICAR DOCUMENTO (EL QUE ME PEDISTE)
+          NUEVO APARTADO: VERIFICAR DOCUMENTO
       ========================================================= */}
       <section className="py-16 bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center max-w-4xl mx-auto">
-            <span className="material-symbols-outlined text-5xl text-green-600 mb-4"></span>
+            <span className="material-symbols-outlined text-5xl text-green-600 mb-4">verified</span>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Verificar Autenticidad de Documento
             </h2>
@@ -305,7 +280,7 @@ export default function LandingPage() {
             <form onSubmit={handleVerificarDocumento} className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
               <input
                 type="text"
-                placeholder="Ej: UV-2026-CON-123-2AA0CD47"
+                placeholder="Ej: UV-2026-TRM-123456"
                 value={codigoVerificacion}
                 onChange={(e) => setCodigoVerificacion(e.target.value)}
                 className="flex-1 px-6 py-3 rounded-lg border-2 border-green-200 focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:outline-none transition-colors duration-300 placeholder-gray-400 font-mono font-bold text-gray-800"
@@ -314,15 +289,13 @@ export default function LandingPage() {
                 type="submit"
                 className="px-8 py-3 rounded-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
               >
-                <span className="material-symbols-outlined"></span>
+                <span className="material-symbols-outlined">search</span>
                 Validar Documento
               </button>
             </form>
           </div>
         </div>
       </section>
-      {/* ========================================================= */}
-
 
       {/* Quick Access Carousel Section */}
       <section className="py-16 sm:py-24 bg-white">
@@ -485,7 +458,7 @@ export default function LandingPage() {
 
           <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-sm text-gray-400">
-              © 2025 Universidad del Valle. Todos los derechos reservados.
+              © 2026 Universidad del Valle. Todos los derechos reservados.
             </div>
             <div className="flex gap-6 text-sm">
               <a href="#" className="hover:text-[#8B1A1A] transition-colors duration-300">
@@ -566,6 +539,11 @@ interface TramiteCardProps {
 
 function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
   const [expanded, setExpanded] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -578,7 +556,6 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
     });
   };
 
-  // Todos los estados posibles en orden
   const todosLosEstados = [
     { id: 1, nombre: 'Recibido', icon: '📥', color: 'bg-blue-50', borderColor: 'border-blue-300', textColor: 'text-blue-700' },
     { id: 2, nombre: 'Verificando Solvencia', icon: '⏳', color: 'bg-yellow-50', borderColor: 'border-yellow-300', textColor: 'text-yellow-700' },
@@ -590,21 +567,23 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
     { id: 8, nombre: 'Rechazado', icon: '❌', color: 'bg-red-50', borderColor: 'border-red-300', textColor: 'text-red-700' },
   ];
 
-  // Obtener los estados completados del historial
   const estadosCompletados = new Set(
     tramite.historial.map((h) => h.nombre_estado)
   );
 
-  // Encontrar el índice del estado actual
   const estadoActualIndex = todosLosEstados.findIndex(
     (e) => e.nombre === tramite.nombre_estado
   );
 
-  // Determinar qué estados mostrar (hasta el estado actual + 1)
   const estadosAMostrar = todosLosEstados.slice(
     0,
     Math.max(estadoActualIndex + 2, 1)
   );
+
+  // Cálculos para el código QR y enlace oficial
+  const anio = new Date(tramite.fecha_solicitud).getFullYear();
+  const codigoOficial = `UV-${anio}-${tramite.codigo_tramite}`;
+  const urlVerificacion = `${baseUrl}/verificar/${codigoOficial}`;
 
   return (
     <div className="bg-white rounded-xl border-2 border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
@@ -636,15 +615,8 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
 
               return (
                 <div key={estado.id} className="flex items-center">
-                  {/* Estado */}
                   <div className="flex flex-col items-center">
-                    {/* Línea conectora (arriba) */}
-                    <div className={`h-1 mb-2 ${isCompleted || isCurrent ? 'bg-[#8B1A1A]' : 'bg-gray-300'
-                      }`}
-                      style={{ width: '30px' }}
-                    ></div>
-
-                    {/* Círculo del estado */}
+                    <div className={`h-1 mb-2 ${isCompleted || isCurrent ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`} style={{ width: '30px' }}></div>
                     <div
                       className={`w-14 h-14 rounded-full border-2 flex items-center justify-center text-lg font-bold transition-all duration-300 ${isCurrent
                         ? `${estado.color} ${estado.borderColor} ring-4 ring-[#8B1A1A]/20 shadow-lg scale-110`
@@ -656,7 +628,6 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
                       <span className="text-xl">{estado.icon}</span>
                     </div>
 
-                    {/* Etiqueta del estado */}
                     <div className="mt-3 text-center">
                       <p className={`text-xs font-semibold whitespace-nowrap ${isCompleted || isCurrent
                         ? `${estado.textColor}`
@@ -678,12 +649,8 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
                     </div>
                   </div>
 
-                  {/* Línea conectora (horizontal) - excepto en el último */}
                   {index < estadosAMostrar.length - 1 && (
-                    <div className={`h-1 mx-0 flex-shrink-0 ${isCompleted ? 'bg-[#8B1A1A]' : 'bg-gray-300'
-                      }`}
-                      style={{ width: '16px' }}
-                    ></div>
+                    <div className={`h-1 mx-0 flex-shrink-0 ${isCompleted ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`} style={{ width: '16px' }}></div>
                   )}
                 </div>
               );
@@ -691,11 +658,48 @@ function TramiteTimelineCard({ tramite }: { tramite: TramiteActivo }) {
           </div>
         </div>
 
+        {/* =========================================================
+            SECCIÓN DEL CÓDIGO QR Y DOCUMENTO FINAL
+        ========================================================= */}
+        {tramite.nombre_estado === 'Finalizado' && (
+          <div className="mt-8 mb-6 bg-green-50 rounded-xl border border-green-200 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
+            <div className="bg-white p-3 border border-green-200 rounded-xl shadow-sm flex-shrink-0">
+              <QRCodeSVG value={urlVerificacion} size={110} level="H" />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1 rounded-md text-xs font-bold mb-3 border border-green-300">
+                <span className="material-symbols-outlined text-[16px]">verified</span> 
+                Documento Emitido
+              </div>
+              <h4 className="text-xl font-black text-gray-900 mb-2">Tu certificado está listo</h4>
+              <p className="text-sm text-gray-600 mb-4 max-w-md">
+                Puedes verificar la autenticidad de tu constancia escaneando este QR o utilizando tu código único de seguridad en nuestra plataforma.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 items-center md:items-start">
+                <div className="bg-white px-4 py-2.5 rounded-lg border border-gray-200 font-mono text-sm font-bold text-gray-800 shadow-sm flex items-center">
+                  <span className="text-gray-400 mr-2 uppercase text-[10px] tracking-widest">Código:</span>
+                  {codigoOficial}
+                </div>
+                <a
+                  href={`/verificar/${codigoOficial}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#8B1A1A] hover:bg-[#6b1414] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"
+                >
+                  Ver Documento
+                  <span className="text-lg">→</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* ========================================================= */}
+
         {/* Historial detallado */}
         {tramite.historial && tramite.historial.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-4 pt-6 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-900 mb-4">📋 Historial Detallado</h4>
-            <div className="space-y-3 max-h-48 overflow-y-auto">
+            <div className="space-y-3 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
               {tramite.historial.map((estado, index) => (
                 <div
                   key={index}

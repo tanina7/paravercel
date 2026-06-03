@@ -132,10 +132,17 @@ export default function TableSolicitudes() {
 
       const json = await safeParse(res as unknown as Response);
 
+      if (!res.ok) {
+        console.error("abrirTramite error:", res.status, res.statusText, json);
+        alert(json?.error || "No se pudo cargar los datos del trámite.");
+        return;
+      }
+
       if (json?.pdfUrl) setPreviewUrl(json.pdfUrl);
-      if (json?.adjuntos) setAdjuntos(json.adjuntos);
+      setAdjuntos(Array.isArray(json?.adjuntos) ? json.adjuntos : []);
     } catch (err) {
-      console.error(err);
+      console.error("abrirTramite error:", err);
+      alert("Error de red al cargar el trámite.");
     } finally {
       setLoading(false);
     }
@@ -159,19 +166,17 @@ export default function TableSolicitudes() {
       const json = await safeParse(res as unknown as Response);
 
       if (!res.ok) {
-        console.error(json);
+        console.error("generarFinal respuesta no OK:", res.status, res.statusText, json);
         const msg = json?.error || json?.__raw || "No se pudo generar la factura.";
         alert(msg);
         return;
       }
 
-      if (json?.pdfUrl) {
-        setPreviewUrl(json.pdfUrl);
-        await abrirTramite(selected); // Refresca todo para asegurar que veamos la última versión
-      }
+      setPreviewUrl(json?.pdfUrl || null);
+      setAdjuntos(Array.isArray(json?.adjuntos) ? json.adjuntos : []);
       setEmitida(false);
     } catch (err) {
-      console.error(err);
+      console.error("generarFinal error:", err);
       alert("Error de red al generar la factura.");
     } finally {
       setLoading(false);

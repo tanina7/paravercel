@@ -13,18 +13,26 @@ export default function TableSolicitudes() {
 
   const [data, setData] = useState<Tramite[]>([]);
   const [search, setSearch] = useState("");
+
   const [selected, setSelected] = useState<Tramite | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const [files, setFiles] = useState<FileList | null>(null);
+
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const fetchData = async () => {
-    const res = await fetch("/api/cajero/tramites");
-    const json = await res.json();
-    if (Array.isArray(json)) setData(json);
-  };
-
+  // =========================
+  // FETCH TRÁMITES
+  // =========================
   useEffect(() => {
+    const fetchData = async () => {
+      const res = await fetch("/api/cajero/tramites");
+      const json = await res.json();
+      if (Array.isArray(json)) setData(json);
+    };
+
     fetchData();
   }, []);
 
@@ -34,66 +42,55 @@ export default function TableSolicitudes() {
     String(t.id_tramite).includes(search)
   );
 
-  // 🔵 SOLO PREVIEW (NO APRUEBA)
-  const generarVista = async (id: number) => {
+  // =========================
+  // GENERAR FACTURA (TODO EN 1)
+  // =========================
+  const generarFactura = async () => {
+    if (!selected || loading) return;
+
     setLoading(true);
+    setPdfUrl(null);
 
-    const res = await fetch("/api/cajero/preview-factura", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_tramite: id })
-    });
+    try {
+      const formData = new FormData();
 
-    const json = await res.json();
+      formData.append("id_tramite", String(selected.id_tramite));
 
-    if (json.pdfUrl) {
-      setPreviewUrl(json.pdfUrl);
+      if (files) {
+        Array.from(files).forEach(file => {
+          formData.append("files", file);
+        });
+      }
+
+      const res = await fetch("/api/cajero/generar", {
+        method: "POST",
+        body: formData
+      });
+
+      const json = await res.json();
+
+      if (json.pdfUrl) {
+        setPdfUrl(json.pdfUrl);
+      }
+
+    } catch (err) {
+      console.error("Error generando factura:", err);
     }
 
     setLoading(false);
   };
 
-  // 🟢 APROBAR
-  const aceptar = async (id: number) => {
-    await fetch("/api/cajero/procesar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_tramite: id,
-        aprobar: true,
-        comentario: "emitido",
-        id_usuario: 1
-      })
-    });
-
-    setData(prev => prev.filter(t => t.id_tramite !== id));
-  };
-
-  // 🔴 RECHAZAR
-  const rechazar = async (id: number) => {
-    await fetch("/api/cajero/procesar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_tramite: id,
-        aprobar: false,
-        comentario: "rechazado",
-        id_usuario: 1
-      })
-    });
-
-    setData(prev => prev.filter(t => t.id_tramite !== id));
-  };
-
+  // =========================
+  // UI
+  // =========================
   return (
-    <div className="p-4 md:p-6 text-black">
+    <div className="p-6 text-black">
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between gap-3 mb-4">
+      <div className="flex justify-between mb-4">
         <h1 className="text-xl font-bold">Trámites</h1>
 
         <input
-          className="border p-2 rounded w-full md:w-80"
+          className="border p-2 rounded w-80"
           placeholder="Buscar..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -101,72 +98,48 @@ export default function TableSolicitudes() {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl shadow-lg border bg-white">
+      <div className="overflow-x-auto border rounded-lg shadow">
 
         <table className="w-full text-sm">
 
-          <thead className="bg-red-900 text-white">
+          <thead className="bg-gray-100">
             <tr>
               <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Nombre</th>
-              <th className="p-3 text-left">Correo</th>
               <th className="p-3 text-left">Estado</th>
-              <th className="p-3 text-left">Acciones</th>
+              <th className="p-3 text-left">Acción</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y">
+          <tbody>
+            {filtered.map((t) => (
+              <tr key={t.id_tramite} className="border-t hover:bg-gray-50">
 
-            {filtered.map(t => (
-              <tr key={t.id_tramite} className="hover:bg-gray-50">
-
-                <td className="p-3 font-medium">#{t.id_tramite}</td>
+                <td className="p-3">#{t.id_tramite}</td>
                 <td className="p-3">{t.nombre_completo}</td>
-                <td className="p-3 text-gray-600">{t.correo}</td>
 
                 <td className="p-3">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                    t.nombre_estado === "Pagado"
-                      ? "bg-green-100 text-green-700"
-                      : t.nombre_estado === "Rechazado"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}>
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
                     {t.nombre_estado}
                   </span>
                 </td>
 
-                <td className="p-3 flex gap-2 flex-wrap">
-
+                <td className="p-3">
                   <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                    className="bg-blue-600 text-white px-3 py-1 rounded"
                     onClick={() => {
                       setSelected(t);
                       setShowModal(true);
+                      setPdfUrl(null);
+                      setFiles(null);
                     }}
                   >
-                    Vista
+                    Generar factura
                   </button>
-
-                  <button
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                    onClick={() => aceptar(t.id_tramite)}
-                  >
-                    Aceptar
-                  </button>
-
-                  <button
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                    onClick={() => rechazar(t.id_tramite)}
-                  >
-                    Rechazar
-                  </button>
-
                 </td>
 
               </tr>
             ))}
-
           </tbody>
 
         </table>
@@ -174,44 +147,49 @@ export default function TableSolicitudes() {
 
       {/* MODAL */}
       {showModal && selected && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
 
-          <div className="bg-white w-full max-w-3xl rounded-xl p-5">
+          <div className="bg-white w-[800px] p-5 rounded-lg">
 
-            <h2 className="text-lg font-bold mb-2">Vista previa</h2>
+            <h2 className="text-lg font-bold mb-2">
+              Generar Factura
+            </h2>
 
             <p className="text-sm mb-3">
-              Cliente: {selected.nombre_completo}
+              Trámite #{selected.id_tramite}
             </p>
 
-            {previewUrl && (
+            {/* FILES */}
+            <input
+              type="file"
+              multiple
+              className="mb-3"
+              onChange={(e) => setFiles(e.target.files)}
+            />
+
+            {/* BUTTON */}
+            <button
+              disabled={loading}
+              className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50"
+              onClick={generarFactura}
+            >
+              {loading ? "Generando..." : "Generar PDF"}
+            </button>
+
+            {/* PDF */}
+            {pdfUrl && (
               <iframe
-                src={previewUrl}
-                className="w-full h-[400px] border"
+                src={pdfUrl}
+                className="w-full h-[500px] mt-4 border"
               />
             )}
 
-            <div className="flex gap-2 mt-4">
-
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-                onClick={() => generarVista(selected.id_tramite)}
-              >
-                {loading ? "Generando..." : "Generar vista"}
-              </button>
-
-              <button
-                className="bg-gray-400 px-4 py-2 rounded"
-                onClick={() => {
-                  setShowModal(false);
-                  setSelected(null);
-                  setPreviewUrl(null);
-                }}
-              >
-                Cerrar
-              </button>
-
-            </div>
+            <button
+              className="mt-3 text-red-600"
+              onClick={() => setShowModal(false)}
+            >
+              Cerrar
+            </button>
 
           </div>
 

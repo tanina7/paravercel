@@ -79,6 +79,20 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+    // =========================
+// OBTENER ARCHIVOS ADJUNTOS
+// =========================
+const [archivosAdjuntos]: any = await pool.query(
+  `
+  SELECT
+    id_archivo,
+    tipo_archivo,
+    archivo
+  FROM archivos_tramite
+  WHERE id_solicitud = ?
+  `,
+  [data.id_solicitud]
+);
 
     // =========================
     // DATOS FACTURA
@@ -214,79 +228,89 @@ export async function POST(req: Request) {
       }
     );
 
-    // =========================
-    // TITULO
-    // =========================
-    page.drawText("FACTURA", {
-      x: 240,
-      y: height - 120,
-      size: 22,
-      font: bold,
-    });
+   // =========================
+// BLOQUE PRINCIPAL CLIENTE
+// =========================
+page.drawRectangle({
+  x: 40,
+  y: height - 220,
+  width: 515,
+  height: 90,
+  color: rgb(0.95, 0.95, 0.95),
+  borderWidth: 1,
+  borderColor: rgb(0.7, 0.7, 0.7),
+});
 
-    page.drawText(
-      "(Con Derecho a Crédito Fiscal)",
-      {
-        x: 190,
-        y: height - 140,
-        size: 8,
-        font,
-      }
-    );
+// Titulo
+page.drawText("RAZON SOCIAL / NOMBRE", {
+  x: 50,
+  y: height - 150,
+  size: 10,
+  font: bold,
+});
 
-    // =========================
-    // DATOS CLIENTE
-    // =========================
-    let y = height - 190;
+// Nombre grande
+page.drawText(nombre.toUpperCase(), {
+  x: 50,
+  y: height - 175,
+  size: 18,
+  font: bold,
+});
 
-    page.drawText(
-      `Fecha: ${new Date().toLocaleDateString(
-        "es-BO"
-      )}`,
-      {
-        x: 40,
-        y,
-        size: 9,
-        font,
-      }
-    );
+// NIT grande
+page.drawText(`NIT / CI: ${nitCi}`, {
+  x: 50,
+  y: height - 200,
+  size: 14,
+  font: bold,
+});
 
-    y -= 25;
+// =========================
+// TITULO FACTURA
+// =========================
+page.drawText("FACTURA", {
+  x: 240,
+  y: height - 260,
+  size: 22,
+  font: bold,
+});
 
-    page.drawText(
-      `Nombre/Razón Social: ${nombre}`,
-      {
-        x: 40,
-        y,
-        size: 10,
-        font,
-      }
-    );
+page.drawText(
+  "(Con Derecho a Crédito Fiscal)",
+  {
+    x: 190,
+    y: height - 280,
+    size: 8,
+    font,
+  }
+);
 
-    y -= 20;
+// =========================
+// DATOS CLIENTE
+// =========================
+let y = height - 330;
 
-    page.drawText(
-      `NIT/CI: ${nitCi}`,
-      {
-        x: 40,
-        y,
-        size: 10,
-        font,
-      }
-    );
+page.drawText(
+  `Fecha: ${new Date().toLocaleDateString("es-BO")}`,
+  {
+    x: 40,
+    y,
+    size: 10,
+    font,
+  }
+);
 
-    y -= 20;
+y -= 25;
 
-    page.drawText(
-      `Correo: ${correo}`,
-      {
-        x: 40,
-        y,
-        size: 10,
-        font,
-      }
-    );
-
+page.drawText(
+  `Correo: ${correo}`,
+  {
+    x: 40,
+    y,
+    size: 10,
+    font,
+  }
+);
     // =========================
     // TABLA
     // =========================
@@ -438,6 +462,128 @@ export async function POST(req: Request) {
         font,
       }
     );
+    // =====================================
+// PORTADA DE ADJUNTOS (OPCIONAL)
+// =====================================
+if (archivosAdjuntos.length > 0) {
+  const portada = pdfDoc.addPage([595, 842]);
+
+  portada.drawText("DOCUMENTOS ADJUNTOS", {
+    x: 140,
+    y: 500,
+    size: 24,
+    font: bold,
+  });
+
+  portada.drawText(
+    `Cantidad de documentos: ${archivosAdjuntos.length}`,
+    {
+      x: 180,
+      y: 460,
+      size: 12,
+      font,
+    }
+  );
+}
+
+// =====================================
+// ADJUNTAR DOCUMENTOS
+// =====================================
+for (const archivo of archivosAdjuntos) {
+  try {
+    const rutaArchivo = path.join(
+      process.cwd(),
+      "public",
+      archivo.archivo
+    );
+
+    if (!fs.existsSync(rutaArchivo)) {
+      console.log("Archivo no encontrado:", rutaArchivo);
+      continue;
+    }
+
+    const extension = path
+      .extname(rutaArchivo)
+      .toLowerCase();
+
+    // =====================
+    // PDF
+    // =====================
+    if (extension === ".pdf") {
+      const pdfAdjunto = await PDFDocument.load(
+        fs.readFileSync(rutaArchivo)
+      );
+
+      const paginas = await pdfDoc.copyPages(
+        pdfAdjunto,
+        pdfAdjunto.getPageIndices()
+      );
+
+      paginas.forEach((pagina) => {
+        pdfDoc.addPage(pagina);
+      });
+
+      console.log("PDF agregado:", archivo.archivo);
+    }
+
+    // =====================
+    // IMÁGENES
+    // =====================
+    else if (
+      extension === ".jpg" ||
+      extension === ".jpeg" ||
+      extension === ".png"
+    ) {
+      const pagina = pdfDoc.addPage([595, 842]);
+
+      pagina.drawText(
+        `Documento: ${archivo.tipo_archivo}`,
+        {
+          x: 40,
+          y: 800,
+          size: 14,
+          font: bold,
+        }
+      );
+
+      const bytes = fs.readFileSync(rutaArchivo);
+
+      const imagen =
+        extension === ".png"
+          ? await pdfDoc.embedPng(bytes)
+          : await pdfDoc.embedJpg(bytes);
+
+      const maxWidth = 500;
+      const maxHeight = 650;
+
+      let width = imagen.width;
+      let height = imagen.height;
+
+      const scale = Math.min(
+        maxWidth / width,
+        maxHeight / height
+      );
+
+      width *= scale;
+      height *= scale;
+
+      pagina.drawImage(imagen, {
+        x: (595 - width) / 2,
+        y: (842 - height) / 2,
+        width,
+        height,
+      });
+
+      console.log("Imagen agregada:", archivo.archivo);
+    }
+  } catch (error) {
+    console.error(
+      "Error adjuntando archivo:",
+      archivo.archivo,
+      error
+    );
+  }
+}
 
     const pdfBytes = await pdfDoc.save();
 

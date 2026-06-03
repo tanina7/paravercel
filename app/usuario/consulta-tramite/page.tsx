@@ -118,6 +118,58 @@ export default function ConsultaTramitePage() {
     }
   };
 
+  const handleVerFactura = async (id_solicitud: number) => {
+    try {
+      const response = await fetch(`/api/usuario/descargar-documento-factura?id_solicitud=${id_solicitud}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al cargar la factura');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error abriendo factura:', error);
+      alert('Error al abrir la factura');
+    }
+  };
+
+  const handleImprimirFactura = async (id_solicitud: number) => {
+    try {
+      const response = await fetch(`/api/usuario/descargar-documento-factura?id_solicitud=${id_solicitud}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error al cargar la factura para imprimir');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crear un iframe temporal para imprimir
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(iframe);
+        }, 1000);
+      };
+      
+      document.body.appendChild(iframe);
+    } catch (error) {
+      console.error('Error imprimiendo factura:', error);
+      alert('Error al imprimir la factura');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -241,28 +293,51 @@ export default function ConsultaTramitePage() {
               </div>
             </div>
 
-            {/* Acciones */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => handleDescargarFactura(tramite.id_solicitud)}
-                className="flex-1 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-                title="Descargar factura del trámite"
-              >
-                <span>📄</span>
-                Descargar Factura
-              </button>
-              <Link
-                href="/usuario/landing"
-                className="flex-1 px-6 py-3 rounded-lg bg-[#8B1A1A] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
-              >
-                Consultar Otro Trámite
-              </Link>
-              <Link
-                href="/usuario/SeleccionTramites"
-                className="flex-1 px-6 py-3 rounded-lg bg-gray-200 text-black font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
-              >
-                Solicitar Nuevo Trámite
-              </Link>
+            {/* Acciones - Factura */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Descargas de Factura</h3>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => handleVerFactura(tramite.id_solicitud)}
+                  className="flex-1 px-6 py-3 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 hover:shadow-lg transition-all duration-300 active:scale-95"
+                  title="Ver vista previa de la factura"
+                >
+                  Vista Previa
+                </button>
+                <button
+                  onClick={() => handleDescargarFactura(tramite.id_solicitud)}
+                  className="flex-1 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-300 active:scale-95"
+                  title="Descargar factura del trámite"
+                >
+                  Descargar
+                </button>
+                <button
+                  onClick={() => handleImprimirFactura(tramite.id_solicitud)}
+                  className="flex-1 px-6 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 hover:shadow-lg transition-all duration-300 active:scale-95"
+                  title="Imprimir factura"
+                >
+                  Imprimir
+                </button>
+              </div>
+            </div>
+
+            {/* Acciones - Trámites */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Navegación</h3>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/usuario/landing"
+                  className="flex-1 px-6 py-3 rounded-lg bg-[#8B1A1A] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
+                >
+                  Consultar Otro Trámite
+                </Link>
+                <Link
+                  href="/usuario/SeleccionTramites"
+                  className="flex-1 px-6 py-3 rounded-lg bg-gray-200 text-black font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 text-center"
+                >
+                  Solicitar Nuevo Trámite
+                </Link>
+              </div>
             </div>
 
             {/* Información Adicional */}

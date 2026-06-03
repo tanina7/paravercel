@@ -278,14 +278,20 @@ export default function HistorialPage() {
 
                           {/* Botones de Acción Generales */}
                           <div className="flex gap-3 pt-4 border-t border-gray-100 flex-wrap">
-                            {/* 🔥 BOTÓN "VER DETALLES" ELIMINADO 🔥 */}
+                            <Link
+                              href={`/usuario/consulta-tramite?codigo=${tramite.codigo_tramite}`}
+                              className="flex-1 px-4 py-2 bg-[#8B1A1A] text-white font-semibold rounded-lg hover:bg-[#701515] transition-all text-center"
+                              title="Ver detalles del trámite"
+                            >
+                              Ver Detalles
+                            </Link>
                             
                             <button
                               onClick={() => handleDescargarFactura(tramite.id_solicitud)}
-                              className="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                              className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all"
                               title="Descargar factura del trámite"
                             >
-                              <span>🧾 Descargar Factura</span>
+                              Descargar Factura
                             </button>
                           </div>
                         </div>

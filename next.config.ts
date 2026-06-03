@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 import os from "os";
 
-// 🔥 MAGIA: Función que busca automáticamente tu IP de WiFi/Cable
+// 
 function getLocalIp() {
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {

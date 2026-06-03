@@ -43,7 +43,13 @@ export default function FormularioPage() {
   const { items, setSolicitud, vaciarCarrito } = useCarrito();
 
   const [nombreCompleto, setNombreCompleto] = useState('');
+  
+  // --- Estados para el Buscador de Carreras ---
   const [carrera, setCarrera] = useState('');
+  const [carreraInput, setCarreraInput] = useState('');
+  const [mostrarDropdownCarreras, setMostrarDropdownCarreras] = useState(false);
+  // ---------------------------------------------
+
   const [subSede, setSubSede] = useState('');
   const [tramitesConDocumentos, setTramitesConDocumentos] = useState<TramiteDocumentos[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,6 +63,11 @@ export default function FormularioPage() {
   const [cargandoNombre, setCargandoNombre] = useState(true);
   const [nitCi, setNitCi] = useState('');
   const [nombreFactura, setNombreFactura] = useState('');
+
+  // Lógica del filtro de carreras
+  const carrerasFiltradas = CARRERAS.filter((c) =>
+    c.toLowerCase().includes(carreraInput.toLowerCase())
+  );
 
   // Inicializar trámites con documentos requeridos y obtener nombre completo
   useEffect(() => {
@@ -121,7 +132,7 @@ export default function FormularioPage() {
       return false;
     }
     if (!carrera) {
-      setError('Debe seleccionar una carrera');
+      setError('Debe buscar y seleccionar una carrera de la lista');
       return false;
     }
     if (!subSede) {
@@ -169,15 +180,6 @@ export default function FormularioPage() {
 
       setLoading(true);
       try {
-        // Guardar datos en localStorage para la próxima página
-        const formData = {
-          nombreCompleto,
-          carrera,
-          subSede,
-          tramites: items,
-          documentos: tramitesConDocumentos,
-        };
-
         setSolicitud({
           nombreCompleto,
           carrera,
@@ -221,8 +223,6 @@ export default function FormularioPage() {
         for (const tramite of tramitesConDocumentos) {
           for (const doc of tramite.documentos) {
             if (doc.archivo) {
-              console.log(`Subiendo: ${tramite.name} - ${doc.tipo}`);
-              
               const uploadFormData = new FormData();
               uploadFormData.append('id_solicitud', newSolicitudId.toString());
               uploadFormData.append('nombre_tramite', tramite.name);
@@ -242,7 +242,6 @@ export default function FormularioPage() {
           }
         }
 
-        // Ir al paso 3 (Factura)
         setStep(3);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -252,7 +251,6 @@ export default function FormularioPage() {
     }
 
     if (step === 3) {
-      // Validar datos de factura
       if (!nitCi.trim()) {
         setError('El NIT/CI es requerido');
         return;
@@ -264,7 +262,6 @@ export default function FormularioPage() {
 
       setLoading(true);
       try {
-        // Guardar datos de factura
         const facturaResponse = await fetch('/api/usuario/guardar-factura', {
           method: 'POST',
           headers: {
@@ -282,7 +279,6 @@ export default function FormularioPage() {
           throw new Error(facturaError.error || 'Error al guardar datos de factura');
         }
 
-        // Ir al paso 4 (Pago)
         setStep(4);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -316,32 +312,18 @@ export default function FormularioPage() {
         pagoFormData.append('monto', totalMonto.toString());
         pagoFormData.append('comprobante', comprobante);
 
-        console.log('=== PASO 4: ENVIANDO PAGO ===');
-        console.log('id_solicitud:', solicitudId);
-        console.log('monto:', totalMonto);
-        console.log('Enviando comprobante al servidor...');
-        
         const pagoResponse = await fetch('/api/usuario/guardar-comprobante', {
           method: 'POST',
           body: pagoFormData,
         });
 
-        console.log('Respuesta del servidor:', pagoResponse.status, pagoResponse.statusText);
-
         if (!pagoResponse.ok) {
           const pagoError = await pagoResponse.json();
-          console.error('Error en respuesta:', pagoError);
           throw new Error(pagoError.error || 'Error al guardar comprobante');
         }
 
-        const pagoResultado = await pagoResponse.json();
-        console.log('Comprobante guardado exitosamente:', pagoResultado);
-
-        // Vaciar carrito después de completar la solicitud
         vaciarCarrito();
-        console.log('✅ Carrito vaciado');
 
-        // Guardar información de la solicitud en localStorage
         const datosConfirmacion = {
           codigoSolicitud,
           tramites: tramitesConCodigosSeguimiento,
@@ -350,28 +332,16 @@ export default function FormularioPage() {
           fechaPago: new Date().toISOString()
         };
         
-        console.log('Preparando datos de confirmación:', datosConfirmacion);
-        
         try {
-          console.log('Intentando guardar en localStorage...');
-          const jsonString = JSON.stringify(datosConfirmacion);
-          console.log('JSON serializado, longitud:', jsonString.length);
-          localStorage.setItem('datosConfirmacionPago', jsonString);
-          console.log('✅ Datos guardados en localStorage exitosamente');
+          localStorage.setItem('datosConfirmacionPago', JSON.stringify(datosConfirmacion));
         } catch (storageError) {
           console.error('❌ Error al guardar en localStorage:', storageError);
-          // Continuar de todas formas - intentaremos pasar los datos por URL
-          console.log('Continuando sin localStorage...');
         }
         
-        // Redireccionar a página de confirmación
-        console.log('Redirigiendo a /usuario/confirmacion-pago');
         setTimeout(() => {
-          console.log('Ejecutando router.push...');
           router.push('/usuario/confirmacion-pago');
         }, 100);
       } catch (err) {
-        console.error('❌ Error en paso 4:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
         setLoading(false);
       }
@@ -384,7 +354,6 @@ export default function FormularioPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Header */}
       <Header />
 
       {/* Hero Section */}
@@ -410,21 +379,11 @@ export default function FormularioPage() {
       <section className="bg-gray-50 border-b border-gray-200 py-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className={`h-2 rounded-full transition-colors ${step >= 1 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
-            </div>
-            <div className="px-4 text-center">
-              <p className="text-sm font-semibold text-black">Paso {step} de 4</p>
-            </div>
-            <div className="flex-1">
-              <div className={`h-2 rounded-full transition-colors ${step >= 2 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
-            </div>
-            <div className="px-4 text-center">
-              <div className={`h-2 rounded-full transition-colors ${step >= 3 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
-            </div>
-            <div className="flex-1">
-              <div className={`h-2 rounded-full transition-colors ${step >= 4 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div>
-            </div>
+            <div className="flex-1"><div className={`h-2 rounded-full transition-colors ${step >= 1 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div></div>
+            <div className="px-4 text-center"><p className="text-sm font-semibold text-black">Paso {step} de 4</p></div>
+            <div className="flex-1"><div className={`h-2 rounded-full transition-colors ${step >= 2 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div></div>
+            <div className="px-4 text-center"><div className={`h-2 rounded-full transition-colors ${step >= 3 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div></div>
+            <div className="flex-1"><div className={`h-2 rounded-full transition-colors ${step >= 4 ? 'bg-[#8B1A1A]' : 'bg-gray-300'}`}></div></div>
           </div>
         </div>
       </section>
@@ -433,7 +392,6 @@ export default function FormularioPage() {
       <section className="flex-grow py-12 sm:py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Error Message */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-700 font-semibold">{error}</p>
@@ -471,24 +429,62 @@ export default function FormularioPage() {
                   </div>
                 </div>
 
-                {/* Carrera */}
-                <div>
+                {/* Carrera (BUSCADOR INTELIGENTE) */}
+                <div className="relative">
                   <label className="block text-sm font-semibold text-black mb-2">
                     Carrera <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={carrera}
-                    onChange={(e) => setCarrera(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
-                    required
-                  >
-                    <option value="">Selecciona una carrera</option>
-                    {CARRERAS.map((car) => (
-                      <option key={car} value={car}>
-                        {car}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={carreraInput}
+                      onChange={(e) => {
+                        setCarreraInput(e.target.value);
+                        setMostrarDropdownCarreras(true);
+                        if (carrera && e.target.value !== carrera) {
+                          setCarrera(''); // Resetea la selección si cambia el texto
+                        }
+                      }}
+                      onFocus={() => setMostrarDropdownCarreras(true)}
+                      onBlur={() => {
+                        // Espera breve para permitir clics en la lista
+                        setTimeout(() => {
+                          setMostrarDropdownCarreras(false);
+                          if (carreraInput !== carrera) {
+                            setCarreraInput(carrera);
+                          }
+                        }, 200);
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 bg-white text-black rounded-lg focus:outline-none focus:border-[#8B1A1A] focus:ring-2 focus:ring-[#8B1A1A]/20 transition-all"
+                      placeholder="Escribe para buscar (Ej: Ingeniería...)"
+                      required={!carrera}
+                    />
+                    
+                    {mostrarDropdownCarreras && (
+                      <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                        {carrerasFiltradas.length > 0 ? (
+                          carrerasFiltradas.map((car) => (
+                            <li
+                              key={car}
+                              onMouseDown={(e) => {
+                                e.preventDefault(); // Evita que se dispare onBlur
+                                setCarrera(car);
+                                setCarreraInput(car);
+                                setMostrarDropdownCarreras(false);
+                              }}
+                              className="px-4 py-3 cursor-pointer hover:bg-red-50 hover:text-[#8B1A1A] text-gray-700 font-medium transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              {car}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="px-4 py-3 text-gray-500 text-sm italic">
+                            No se encontraron carreras
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
                 </div>
 
                 {/* Sub Sede */}

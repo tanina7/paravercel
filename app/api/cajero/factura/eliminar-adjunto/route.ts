@@ -11,15 +11,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "id_tramite y url son requeridos" }, { status: 400 });
     }
 
-    // url espera formato /uploads/adjuntos/<id_tramite>/<file>
-    const parsed = url.replace(/^\//, "");
-    const filePath = path.join(process.cwd(), parsed);
+    // url puede venir como /uploads/adjuntos/<id_tramite>/<file>
+    // o bien como una URL completa.
+    let parsed = url;
+    try {
+      const parsedUrl = new URL(url, "http://localhost");
+      parsed = parsedUrl.pathname;
+    } catch {
+      // si no es URL completa, mantener el valor original.
+    }
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    } else {
+    parsed = parsed.replace(/^\//, "").split(/[?#]/)[0];
+    const fileName = path.basename(parsed);
+    const candidatePaths = [
+      path.join(process.cwd(), parsed),
+      path.join(process.cwd(), "public/uploads/adjuntos", String(id_tramite), fileName),
+      path.join(process.cwd(), "public/uploads/adjuntos", String(id_tramite), decodeURIComponent(fileName))
+    ];
+
+    const filePath = candidatePaths.find((candidate) => fs.existsSync(candidate));
+
+    if (!filePath) {
       return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
     }
+
+    fs.unlinkSync(filePath);
 
     // actualizar _meta.json si existe
     const folder = path.join(process.cwd(), "public/uploads/adjuntos", String(id_tramite));

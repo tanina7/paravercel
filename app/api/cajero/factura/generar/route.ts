@@ -3,11 +3,13 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import fs from "fs";
 import path from "path";
+import { getOriginalInvoicePath } from "../utils";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { id_tramite, nombre: nombreUsuario } = body;
+    const tramiteId = String(id_tramite);
 
     if (!id_tramite) {
       return NextResponse.json({ error: "id_tramite requerido" }, { status: 400 });
@@ -82,10 +84,10 @@ export async function POST(req: Request) {
     const folder = path.join(process.cwd(), "public/uploads/facturas");
     if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
 
-    const fileName = `factura-${id_tramite}-${Date.now()}.pdf`;
+    const fileName = `factura-${tramiteId}-${Date.now()}.pdf`;
     fs.writeFileSync(path.join(folder, fileName), Buffer.from(pdfBytes));
 
-    const pdfUrl = `/uploads/facturas/${fileName}`;
+    const createdPdfUrl = `/uploads/facturas/${fileName}`;
 
     if (data.id_factura) {
       await pool.query(
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
           fecha_emision = NOW()
         WHERE id_factura = ?
         `,
-        [nombre, nitCi, numeroFactura, codigoControl, costo, pdfUrl, data.id_factura]
+        [nombre, nitCi, numeroFactura, codigoControl, costo, createdPdfUrl, data.id_factura]
       );
     } else {
       await pool.query(
@@ -117,19 +119,24 @@ export async function POST(req: Request) {
           fecha_emision
         ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         `,
-        [data.id_solicitud, nombre, nitCi, numeroFactura, codigoControl, costo, pdfUrl]
+        [data.id_solicitud, nombre, nitCi, numeroFactura, codigoControl, costo, createdPdfUrl]
       );
     }
 
-    const adjuntosPath = path.join(process.cwd(), "public/uploads/adjuntos", id_tramite);
+    const adjuntosPath = path.join(process.cwd(), "public/uploads/adjuntos", tramiteId);
     let adjuntos: string[] = [];
 
     if (fs.existsSync(adjuntosPath)) {
       adjuntos = fs
         .readdirSync(adjuntosPath)
         .filter((f) => f !== "_meta.json")
-        .map((f) => `/uploads/adjuntos/${id_tramite}/${f}`);
+        .map((f) => `/uploads/adjuntos/${tramiteId}/${f}`);
     }
+
+    const baseInvoicePath = getOriginalInvoicePath(tramiteId, data.documento_factura);
+    const pdfUrl = baseInvoicePath
+      ? `/uploads/facturas/${path.basename(baseInvoicePath)}`
+      : createdPdfUrl;
 
     return NextResponse.json({ success: true, pdfUrl, adjuntos });
 

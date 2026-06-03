@@ -134,6 +134,8 @@ export default function TableSolicitudes() {
     if (!selected) return;
 
     setLoading(true);
+    setPreviewUrl(null);
+    setAdjuntos([]);
 
     try {
       const res = await fetch("/api/cajero/factura/reconstruir", {
@@ -144,11 +146,18 @@ export default function TableSolicitudes() {
 
       const json = await safeParse(res as unknown as Response);
 
-      if (json?.pdfUrl) setPreviewUrl(json.pdfUrl);
-      if (json?.adjuntos) setAdjuntos(json.adjuntos);
+      if (!res.ok) {
+        console.error("Error reconstruyendo factura:", json);
+        alert(json?.error || "No se pudo cargar la factura y los adjuntos.");
+        return;
+      }
+
+      setPreviewUrl(json?.pdfUrl || null);
+      setAdjuntos(Array.isArray(json?.adjuntos) ? json.adjuntos : []);
 
     } catch (err) {
       console.error(err);
+      alert("Error de red al cargar la factura y los adjuntos.");
     } finally {
       setLoading(false);
     }
@@ -198,19 +207,29 @@ export default function TableSolicitudes() {
   // ELIMINAR ADJUNTO
   // =========================
   const eliminarAdjunto = async (url: string) => {
-    setAdjuntos(prev => prev.filter(a => a !== url));
+    if (!selected) return;
 
     try {
-      await fetch("/api/cajero/factura/eliminar-adjunto", {
+      const res = await fetch("/api/cajero/factura/eliminar-adjunto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id_tramite: selected?.id_tramite,
+          id_tramite: selected.id_tramite,
           url
         })
       });
+
+      const json = await res.json();
+      if (!res.ok) {
+        console.error(json);
+        alert(json?.error || "No se pudo eliminar el adjunto.");
+        return;
+      }
+
+      setAdjuntos(prev => prev.filter(a => a !== url));
     } catch (err) {
       console.error(err);
+      alert("Error al eliminar el archivo adjunto.");
     }
   };
 

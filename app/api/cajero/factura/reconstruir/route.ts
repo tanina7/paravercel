@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getOriginalInvoicePath, mergeInvoiceWithAttachments } from "../utils";
 
 export async function POST(req: Request) {
   try {
@@ -19,14 +20,6 @@ export async function POST(req: Request) {
     // FACTURAS
     // =========================
     const facturasPath = path.join(process.cwd(), "public/uploads/facturas");
-    let match = null;
-
-    if (fs.existsSync(facturasPath)) {
-      const files = fs.readdirSync(facturasPath);
-      match = files
-        .filter(f => f.startsWith(`factura-${id_tramite}-`)) // <-- CORREGIDO CON BACKTICKS
-        .sort((a, b) => b.localeCompare(a))[0];
-    }
 
     // =========================
     // ADJUNTOS
@@ -38,16 +31,46 @@ export async function POST(req: Request) {
     );
 
     let adjuntos: string[] = [];
+    let attachmentFiles: string[] = [];
 
     if (fs.existsSync(adjuntosPath)) {
-      adjuntos = fs
+      attachmentFiles = fs
         .readdirSync(adjuntosPath)
-        .filter(f => f !== "_meta.json") // <-- CORREGIDO: Ignora el archivo de configuración
-        .map(f => `/uploads/adjuntos/${id_tramite}/${f}`); // <-- CORREGIDO CON BACKTICKS
+        .filter((f) => {
+          if (f === "_meta.json" || f.startsWith(".")) return false;
+          const filePath = path.join(adjuntosPath, f);
+          try {
+            return fs.statSync(filePath).isFile();
+          } catch {
+            return false;
+          }
+        })
+        .map((f) => path.join(adjuntosPath, f));
+
+      adjuntos = attachmentFiles.map((pathFile) => {
+        const fileName = path.basename(pathFile);
+        return `/uploads/adjuntos/${id_tramite}/${fileName}`;
+      });
+    }
+
+    const baseInvoicePath = getOriginalInvoicePath(id_tramite);
+    let pdfUrl: string | null = null;
+
+    if (attachmentFiles.length > 0) {
+      if (!baseInvoicePath) {
+        return NextResponse.json({ error: "Factura base no encontrada para reconstruir" }, { status: 404 });
+      }
+
+      const mergedFileName = `factura-${id_tramite}-reconstruido-${Date.now()}.pdf`;
+      const mergedFilePath = path.join(facturasPath, mergedFileName);
+      await mergeInvoiceWithAttachments(baseInvoicePath, attachmentFiles, mergedFilePath);
+      pdfUrl = `/uploads/facturas/${mergedFileName}`;
+    } else if (baseInvoicePath) {
+      pdfUrl = `/uploads/facturas/${path.basename(baseInvoicePath)}`;
     }
 
     return NextResponse.json({
-      pdfUrl: match ? `/uploads/facturas/${match}` : null, // <-- CORREGIDO CON BACKTICKS
+      pdfUrl,
       adjuntos
     });
 

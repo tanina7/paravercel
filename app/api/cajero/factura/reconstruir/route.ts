@@ -3,25 +3,63 @@ import fs from "fs";
 import path from "path";
 
 export async function POST(req: Request) {
-  const { id_tramite } = await req.json();
+  try {
+    const body = await req.json().catch(() => null);
 
-  const folder = path.join(process.cwd(), "public/uploads/facturas");
+    if (!body?.id_tramite) {
+      return NextResponse.json(
+        { error: "id_tramite requerido" },
+        { status: 400 }
+      );
+    }
 
-  const files = fs.readdirSync(folder);
+    const id_tramite = String(body.id_tramite);
 
-  const match = files
-    .filter(f => f.includes(`factura-${id_tramite}-`))
-    .sort()
-    .reverse()[0];
+    // =========================
+    // FACTURAS
+    // =========================
+    const facturasPath = path.join(process.cwd(), "public/uploads/facturas");
+    let match = null;
 
-  if (!match) {
+    if (fs.existsSync(facturasPath)) {
+      const files = fs.readdirSync(facturasPath);
+      match = files
+        .filter(f => f.startsWith(`factura-${id_tramite}-`)) // <-- CORREGIDO CON BACKTICKS
+        .sort((a, b) => b.localeCompare(a))[0];
+    }
+
+    // =========================
+    // ADJUNTOS
+    // =========================
+    const adjuntosPath = path.join(
+      process.cwd(),
+      "public/uploads/adjuntos",
+      id_tramite
+    );
+
+    let adjuntos: string[] = [];
+
+    if (fs.existsSync(adjuntosPath)) {
+      adjuntos = fs
+        .readdirSync(adjuntosPath)
+        .filter(f => f !== "_meta.json") // <-- CORREGIDO: Ignora el archivo de configuración
+        .map(f => `/uploads/adjuntos/${id_tramite}/${f}`); // <-- CORREGIDO CON BACKTICKS
+    }
+
+    return NextResponse.json({
+      pdfUrl: match ? `/uploads/facturas/${match}` : null, // <-- CORREGIDO CON BACKTICKS
+      adjuntos
+    });
+
+  } catch (error: any) {
+    console.error("RECONSTRUIR ERROR:", error);
+
     return NextResponse.json(
-      { error: "Factura no encontrada" },
-      { status: 404 }
+      {
+        error: "Error reconstruyendo factura",
+        detail: error?.message
+      },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    pdfUrl: `/uploads/facturas/${match}`
-  });
 }

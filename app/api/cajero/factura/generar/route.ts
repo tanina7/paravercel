@@ -1,43 +1,18 @@
 import pool from "@/lib/db";
 import { NextResponse } from "next/server";
-import {
-  PDFDocument,
-  StandardFonts,
-  rgb,
-} from "pdf-lib";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import fs from "fs";
 import path from "path";
 
 export async function POST(req: Request) {
   try {
-
-    const { id_tramite, nombre: nombreUsuario } = await req.json();
+    const body = await req.json();
+    const { id_tramite, nombre: nombreUsuario } = body;
 
     if (!id_tramite) {
-      return NextResponse.json(
-        { error: "id_tramite es requerido" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "id_tramite requerido" }, { status: 400 });
     }
 
-    // =========================
-    // TRÁMITE
-    // =========================
-    const [tramiteCheck]: any = await pool.query(
-      "SELECT * FROM tramites WHERE id_tramite = ?",
-      [id_tramite]
-    );
-
-    if (!tramiteCheck.length) {
-      return NextResponse.json(
-        { error: "Trámite no encontrado" },
-        { status: 404 }
-      );
-    }
-
-    // =========================
-    // DATOS
-    // =========================
     const [rows]: any = await pool.query(
       `
       SELECT
@@ -46,8 +21,11 @@ export async function POST(req: Request) {
         u.nombre_completo,
         u.correo,
         u.ci AS ci_usuario,
+        f.id_factura,
         f.nombre AS nombre_factura,
         f.nit_ci AS nit_ci_factura,
+        f.numero_factura AS factura_numero,
+        f.codigo_control AS factura_codigo_control,
         tt.nombre_tramite,
         tt.costo
       FROM tramites t
@@ -61,156 +39,102 @@ export async function POST(req: Request) {
     );
 
     const data = rows?.[0];
-
-    if (!data) {
-      return NextResponse.json(
-        { error: "Sin datos" },
-        { status: 404 }
-      );
-    }
+    if (!data) return NextResponse.json({ error: "Sin datos" }, { status: 404 });
 
     const nombre =
       data.nombre_factura ||
       nombreUsuario ||
-      data.nombre_completo;
+      data.nombre_completo ||
+      "SIN NOMBRE";
 
-    const nitCi = data.nit_ci_factura || data.ci_usuario;
+    const nitCi = data.nit_ci_factura || data.ci_usuario || "0";
+    const tramite = data.nombre_tramite || "TRAMITE";
+    const costo = Number(data.costo ?? 0);
 
-    const correo = data.correo;
-    const tramite = data.nombre_tramite;
-    const costo = Number(data.costo || 0);
+    let numeroFactura = Number(data.factura_numero ?? 0);
+    let codigoControl = data.factura_codigo_control || "";
 
-    // =========================
-    // NUMERO FACTURA
-    // =========================
-    const [ultimaFactura]: any = await pool.query(`
-      SELECT numero_factura
-      FROM facturas
-      ORDER BY id_factura DESC
-      LIMIT 1
-    `);
-
-    let numeroFactura = 1;
-    if (ultimaFactura.length > 0) {
-      numeroFactura =
-        Number(ultimaFactura[0].numero_factura) + 1;
+    if (!numeroFactura) {
+      const [last]: any = await pool.query(`SELECT MAX(CAST(numero_factura AS UNSIGNED)) AS maxNum FROM facturas`);
+      numeroFactura = Number(last?.[0]?.maxNum ?? 0) + 1;
+      codigoControl = `CTRL-${Date.now()}`;
     }
 
-    const codigoControl =
-      "CTRL-" + Date.now() + "-" + Math.floor(Math.random() * 100000);
-
-    // =========================
-    // PDF
-    // =========================
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]);
-
-    const { height } = page.getSize();
 
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    // =========================
-    // HEADER
-    // =========================
-    page.drawText("UNIVERSIDAD PRIVADA DEL VALLE", {
-      x: 150,
-      y: height - 40,
-      size: 14,
-      font: bold,
-    });
+    const { height } = page.getSize();
 
-    page.drawText(`FACTURA N° ${numeroFactura}`, {
-      x: 400,
-      y: height - 40,
-      size: 10,
-      font: bold,
-    });
+    page.drawText("UNIVERSIDAD PRIVADA DEL VALLE", { x: 120, y: height - 50, size: 14, font: bold });
+    page.drawText(`FACTURA N° ${numeroFactura}`, { x: 400, y: height - 50, size: 10, font: bold });
 
-    page.drawText(`Control: ${codigoControl}`, {
-      x: 400,
-      y: height - 58,
-      size: 8,
-      font,
-    });
+    page.drawText(nombre, { x: 50, y: height - 150, size: 12, font: bold });
+    page.drawText(`NIT/CI: ${nitCi}`, { x: 50, y: height - 170, size: 10, font });
 
-    // =========================
-    // CLIENTE
-    // =========================
-    page.drawText(nombre.toUpperCase(), {
-      x: 50,
-      y: height - 170,
-      size: 16,
-      font: bold,
-    });
-
-    page.drawText(`NIT/CI: ${nitCi}`, {
-      x: 50,
-      y: height - 200,
-      size: 12,
-      font,
-    });
-
-    // =========================
-    // DETALLE
-    // =========================
-    page.drawText(tramite, {
-      x: 50,
-      y: height - 300,
-      size: 12,
-      font,
-    });
-
-    page.drawText(`${costo.toFixed(2)} Bs`, {
-      x: 400,
-      y: height - 300,
-      size: 12,
-      font: bold,
-    });
+    page.drawText(tramite, { x: 50, y: height - 250, size: 11, font });
+    page.drawText(`${costo.toFixed(2)} Bs`, { x: 450, y: height - 250, size: 11, font: bold });
 
     const pdfBytes = await pdfDoc.save();
 
     const folder = path.join(process.cwd(), "public/uploads/facturas");
-
-    if (!fs.existsSync(folder)) {
-      fs.mkdirSync(folder, { recursive: true });
-    }
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
 
     const fileName = `factura-${id_tramite}-${Date.now()}.pdf`;
-    const filePath = path.join(folder, fileName);
-
-    fs.writeFileSync(filePath, Buffer.from(pdfBytes));
+    fs.writeFileSync(path.join(folder, fileName), Buffer.from(pdfBytes));
 
     const pdfUrl = `/uploads/facturas/${fileName}`;
 
-    // =========================
-    // SAVE FACTURA
-    // =========================
-    await pool.query(
-      `
-      UPDATE facturas
-      SET nombre=?, nit_ci=?, numero_factura=?, codigo_control=?, monto=?, documento_factura=?, fecha_emision=NOW()
-      WHERE id_solicitud=?
-      `,
-      [
-        nombre,
-        nitCi,
-        numeroFactura,
-        codigoControl,
-        costo,
-        pdfUrl,
-        data.id_solicitud,
-      ]
-    );
+    if (data.id_factura) {
+      await pool.query(
+        `
+        UPDATE facturas
+        SET
+          nombre = ?,
+          nit_ci = ?,
+          numero_factura = ?,
+          codigo_control = ?,
+          monto = ?,
+          documento_factura = ?,
+          fecha_emision = NOW()
+        WHERE id_factura = ?
+        `,
+        [nombre, nitCi, numeroFactura, codigoControl, costo, pdfUrl, data.id_factura]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO facturas (
+          id_solicitud,
+          nombre,
+          nit_ci,
+          numero_factura,
+          codigo_control,
+          monto,
+          documento_factura,
+          fecha_emision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        `,
+        [data.id_solicitud, nombre, nitCi, numeroFactura, codigoControl, costo, pdfUrl]
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      pdfUrl,
-      numeroFactura,
-    });
+    const adjuntosPath = path.join(process.cwd(), "public/uploads/adjuntos", id_tramite);
+    let adjuntos: string[] = [];
 
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (fs.existsSync(adjuntosPath)) {
+      adjuntos = fs
+        .readdirSync(adjuntosPath)
+        .filter((f) => f !== "_meta.json")
+        .map((f) => `/uploads/adjuntos/${id_tramite}/${f}`);
+    }
+
+    return NextResponse.json({ success: true, pdfUrl, adjuntos });
+
+  } catch (err: any) {
+    console.error("Error generando factura:", err);
+    return NextResponse.json({ error: err?.message || "Error generando factura" }, { status: 500 });
   }
 }

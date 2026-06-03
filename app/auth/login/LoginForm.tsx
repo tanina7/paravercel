@@ -63,84 +63,96 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg">
-
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#8B1A1A] to-[#6B1415] rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">T</span>
-          </div>
-
-          <h2 className="text-3xl font-bold text-gray-900">
-            Iniciar Sesión
-          </h2>
-
-          <p className="text-gray-600 mt-2">
-            Sistema de trámites universitarios
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-
+    <div className="w-full max-w-md mx-auto">
+      {/* Tarjeta principal con efecto Glassmorphism y sombras suaves */}
+      <div className="bg-white/90 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
+        
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          
+          {/* Alerta de Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-fade-in">
+              <span className="text-lg">⚠️</span>
+              <p className="font-medium">{error}</p>
             </div>
           )}
 
+          {/* Input: Correo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
               Correo Electrónico
             </label>
-
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-2 border border-gray-300 bg-white text-black rounded-lg focus:ring-2 focus:ring-[#8B1A1A] focus:border-transparent"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              placeholder="usuario@univalle.edu"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-gray-400">✉️</span>
+              </div>
+              <input
+                type="email"
+                required
+                className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-gray-50/50 text-gray-900 rounded-xl focus:bg-white focus:ring-0 focus:border-[#8B1A1A] transition-all outline-none"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="usuario@univalle.edu"
+              />
+            </div>
           </div>
 
+          {/* Input: Contraseña */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
               Contraseña
             </label>
-
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-2 border border-gray-300 bg-white text-black rounded-lg focus:ring-2 focus:ring-[#8B1A1A] focus:border-transparent"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-gray-400">🔒</span>
+              </div>
+              <input
+                type="password"
+                required
+                className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 bg-gray-50/50 text-gray-900 rounded-xl focus:bg-white focus:ring-0 focus:border-[#8B1A1A] transition-all outline-none"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                placeholder="••••••••"
+              />
+            </div>
           </div>
 
+          {/* Botón de Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white font-semibold rounded-lg hover:scale-105 transition-all disabled:opacity-50"
+            className="w-full py-3.5 mt-2 bg-gradient-to-r from-[#8B1A1A] to-[#6B1415] text-white font-bold rounded-xl shadow-lg shadow-red-900/20 hover:shadow-red-900/40 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
           >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Verificando...</span>
+              </>
+            ) : (
+              'Ingresar al Sistema'
+            )}
           </button>
+        </form>
 
-          <p className="text-center text-sm text-gray-600">
-            ¿No tienes cuenta?{' '}
+        {/* Separador */}
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-600 font-medium">
+            ¿Eres estudiante nuevo?{' '}
             <Link
               href="/auth/register"
-              className="text-[#8B1A1A] font-semibold hover:underline"
+              className="text-[#8B1A1A] font-bold hover:underline ml-1 transition-colors"
             >
-              Regístrate aquí
+              Crea tu cuenta aquí
             </Link>
           </p>
-
-        </form>
+        </div>
       </div>
     </div>
   );

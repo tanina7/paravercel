@@ -31,9 +31,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <CarritoProvider>
-          <AuthProvider>
+          {/* TODO: Fix AuthProvider message channel error */}
+          {/* <AuthProvider> */}
             {children}
-          </AuthProvider>
+          {/* </AuthProvider> */}
         </CarritoProvider>
       </body>
     </html>

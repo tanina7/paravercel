@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Swal from 'sweetalert2';
@@ -26,8 +27,20 @@ interface TramiteData {
   monto?: number | string; // <-- AÑADIDO: Para recibir el costo desde la API
 }
 
-export default function EmitirCertificadoPage() { 
-  const params = useParams(); 
+export default function EmitirCertificadoPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col justify-center items-center h-screen space-y-4">
+        <span className="material-symbols-outlined text-5xl animate-spin text-[#8B1A1A]">sync</span>
+        <p className="text-gray-500 font-medium">Preparando documento final...</p>
+      </div>
+    }>
+      <EmitirCertificadoContent />
+    </Suspense>
+  );
+}
+
+function EmitirCertificadoContent() { 
   const tramiteId = params.id; 
   const router = useRouter();
   

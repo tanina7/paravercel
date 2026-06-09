@@ -24,34 +24,15 @@ AVNS_iKeVgvVdaPJAQcw2XtV
 
 ---
 
-## 📋 Paso 1: Preparar repositorio Git
+## 📋 Paso 1: Repositorio Git (YA COMPLETADO ✅)
 
-### 1.1 Inicializar Git (si no lo has hecho)
-```bash
-cd "C:\Users\TANI\Documents\Proyect2\app-tramites\PR2-26-APP-Tramites-UV-B--C-"
-
-git init
-git add .
-git commit -m "Initial commit - Sistema de Gestión de Trámites Universitarios"
-git branch -M main
-```
-
-### 1.2 Crear repositorio en GitHub
-1. Ve a https://github.com/new
-2. Nombre: `app-tramites-uv` (o similar)
-3. Click "Create repository"
-4. **NO inicialices con README** (porque ya lo tienes)
-
-### 1.3 Conectar con GitHub
-```bash
-# Reemplaza TU_USUARIO con tu usuario de GitHub
-git remote add origin https://github.com/TU_USUARIO/app-tramites-uv.git
-git push -u origin main
-```
+✅ Tu código ya está en GitHub
+✅ Rama a deployar: `feature/facturas-fix` 
+✅ Cambios incluyen: Docker, QA docs, variables de entorno configurables
 
 ---
 
-## 🎯 Paso 2: Configurar en Vercel
+## 🎯 Paso 2: Configurar Vercel
 
 ### 2.1 Crear cuenta Vercel
 1. Ve a https://vercel.com
@@ -61,16 +42,12 @@ git push -u origin main
 
 ### 2.2 Crear proyecto
 1. Dashboard → "Add New..." → "Project"
-2. Busca `app-tramites-uv`
+2. Busca `PR2-26-APP-Tramites-UV-B--C-`
 3. Click en "Import"
-4. Click "Deploy" (por ahora, sin configuración)
-
-### 2.3 Esperar a que falle (es normal)
-El deploy fallará porque falta la contraseña de MySQL. Eso es bueno - significa que está intentando conectar.
-
-Ver los logs:
-- Dashboard → Recent Deployments → Click en el deployment
-- Ver logs (verás error de DB_PASSWORD)
+4. **IMPORTANTE:** En "Configure Project"
+   - Framework Preset: `Next.js`
+   - Root Directory: `.` (raíz)
+5. Click en "Deploy" (fallará, es normal)
 
 ---
 
@@ -78,72 +55,104 @@ Ver los logs:
 
 ### 3.1 En el dashboard de Vercel
 1. Project Settings → Environment Variables
-2. Agregar cada variable:
+2. Agregar cada variable (todas obligatorias):
 
 ```
 DB_HOST = mysql-tramitesunivalle-tramitesunivalle7.b.aivencloud.com
 DB_PORT = 11597
 DB_NAME = tramites_univalle
 DB_USER = avnadmin
-DB_PASSWORD = TU_NUEVA_CONTRASEÑA_AIVEN
-JWT_SECRET = generarUnValorSeguroAquiUsandoOpenSSL
+DB_PASSWORD = [CAMBIAR A CONTRASEÑA NUEVA EN AIVEN]
+JWT_SECRET = [generar valor seguro - ver paso 3.2]
 NODE_ENV = production
 NEXT_PUBLIC_API_URL = https://tu-proyecto.vercel.app
 ```
 
-### 3.2 Generar JWT_SECRET seguro
-```bash
-# En PowerShell
-[Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Maximum 256) }))
+### ⚠️ 3.2 SEGURIDAD CRÍTICA
+**Tu contraseña anterior fue expuesta. CAMBIAR INMEDIATAMENTE:**
+1. Ve a https://aiven.io
+2. Entra a tu instancia MySQL
+3. Settings → Users → Change Password
+4. Guarda la nueva contraseña
+5. Úsala en `DB_PASSWORD`
 
-# Copiar el valor y usarlo como JWT_SECRET
+### 3.3 Generar JWT_SECRET seguro
+En PowerShell ejecuta:
+```powershell
+$bytes = 1..32 | ForEach-Object { [byte](Get-Random -Maximum 256) }
+[Convert]::ToBase64String($bytes)
+```
+Copia el resultado y úsalo en `JWT_SECRET`
+
+### 3.4 NEXT_PUBLIC_API_URL
+Después del primer deploy, Vercel te asignará URL como:
+- `https://pr2-26-app-tramites-uv-b-c.vercel.app`
+- Usa esa URL aquí
+
+---
+
+## 🔄 Paso 4: Configurar rama de deployment
+
+### 4.1 En Project Settings
+1. Settings → Git Configuration
+2. **Production Branch**: Cambiar a `feature/facturas-fix`
+3. Click "Save"
+
+Ahora Vercel hará deploy automático desde `feature/facturas-fix` (no desde main)
+
+---
+
+## ✅ Paso 5: Trigger deploy
+
+### 5.1 Forzar deployment
+Hay dos formas:
+
+**Opción A: Desde dashboard (rápido)**
+1. Dashboard → Deployments → últimas build fallidas
+2. Click en "Redeploy"
+3. Esperar 2-3 minutos
+
+**Opción B: Via Git (automático)**
+```bash
+git push origin feature/facturas-fix
+# Vercel automáticamente detecta y deploya
 ```
 
-### 3.3 Guardar variables
-Click en "Save"
-
----
-
-## 🔄 Paso 4: Redeploy
-
-1. Dashboard → Deployments
-2. Click en el último deployment fallido
-3. Click "Redeploy"
-4. Esperar 2-3 minutos
-
-### Verificar que funcionó:
-- Logs deben mostrar "Build successful"
-- Se asignará URL: `https://app-tramites-uv.vercel.app`
-
----
-
-## ✅ Paso 5: Probar la aplicación
-
-1. Abre tu URL en navegador
-2. Intenta hacer login
-3. Verifica que pueda:
-   - Conectar a MySQL en Aiven
-   - Listar trámites
-   - Crear solicitudes
+### 5.2 Verificar que funcionó
+- Logs: Dashboard → Deployments → últimas → "Logs"
+- Debe decir "Build successful"
+- URL: `https://tu-proyecto.vercel.app`
 
 ---
 
 ## 🔄 Actualizaciones automáticas
 
-Ahora cada vez que hagas `git push`:
+Ahora cada vez que hagas `git push` a `feature/facturas-fix`:
 
 ```bash
 # Hacer cambios en código
 git add .
 git commit -m "Descripción del cambio"
-git push origin main
+git push origin feature/facturas-fix
 
 # Vercel automáticamente:
-# 1. Detecta el push
+# 1. Detecta el push en feature/facturas-fix
 # 2. Construye la app
-# 3. Deploya en 2 minutos
-# 4. Te muestra la URL
+# 3. Deploya en 2-3 minutos
+# 4. Tu sitio se actualiza automáticamente
 ```
+
+---
+
+## 📝 Pruebas después del deployment
+
+### Verificar que todo funciona:
+1. Accede a tu URL de Vercel
+2. Login con credenciales de prueba
+3. Listar trámites
+4. Crear una solicitud
+5. Cargar documentos
+6. Ver historial
 
 ---
 

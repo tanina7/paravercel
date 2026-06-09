@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import LoginForm from './LoginForm';
 
 export const metadata = {
@@ -37,7 +38,9 @@ export default function LoginPage() {
 
         {/* --- Contenedor de tu Formulario --- */}
         <div className="w-full relative z-20">
-          <LoginForm />
+          <Suspense fallback={<div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse"></div>}>
+            <LoginForm />
+          </Suspense>
         </div>
 
         {/* --- Footer --- */}

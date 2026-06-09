@@ -41,6 +41,7 @@ export default function EmitirCertificadoPage() {
 }
 
 function EmitirCertificadoContent() { 
+  const params = useParams();
   const tramiteId = params.id; 
   const router = useRouter();
   

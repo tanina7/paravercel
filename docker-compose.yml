@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0-alpine
+    container_name: tramites_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tramites_univalle}
+      MYSQL_USER: ${MYSQL_USER:-tramites_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-tramites_pass}
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql:ro
+    networks:
+      - tramites_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tramites_app
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-tramites_univalle}
+      DB_USER: ${MYSQL_USER:-tramites_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-tramites_pass}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - tramites_network
+    restart: unless-stopped
+    # Uncomment to see logs
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  tramites_network:
+    driver: bridge

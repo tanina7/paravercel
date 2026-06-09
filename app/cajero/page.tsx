@@ -1,4 +1,7 @@
 'use client'
+
+export const dynamic = 'force-dynamic';
+
 import DashboardCards from './components/DashboardCards';
 import TableSolicitudes from './components/TableSolicitudes';
 import Link from "next/link";

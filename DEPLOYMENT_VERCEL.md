@@ -65,7 +65,7 @@ DB_USER = avnadmin
 DB_PASSWORD = [CAMBIAR A CONTRASEÑA NUEVA EN AIVEN]
 JWT_SECRET = [generar valor seguro - ver paso 3.2]
 NODE_ENV = production
-NEXT_PUBLIC_API_URL = https://tu-proyecto.vercel.app
+   = https://tu-proyecto.vercel.app
 ```
 
 ### ⚠️ 3.2 SEGURIDAD CRÍTICA

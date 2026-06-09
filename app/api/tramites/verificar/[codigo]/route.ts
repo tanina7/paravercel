@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db'; 
 
-export async function GET(request: Request, { params }: { params: { codigo: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ codigo: string }> }) {
   try {
-    const { codigo } = params;
+    const { codigo } = await params;
 
     const [rows]: any = await pool.query(
       `SELECT t.codigo_tramite, tt.nombre_tramite, u.nombre_completo, u.ci, est.carrera, est.subsede AS sede, t.fecha_creacion 

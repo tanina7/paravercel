@@ -3,10 +3,10 @@ import pool from '@/lib/db'; // Asegúrate de que esta ruta apunte a tu configur
 
 export async function GET(
   request: Request,
-  { params }: { params: { codigo: string } }
+  { params }: { params: Promise<{ codigo: string }> }
 ) {
   try {
-    const { codigo } = params;
+    const { codigo } = await params;
 
     // Buscamos el trámite por su código_tramite
     // Ajusta los nombres de las tablas y campos según tu DB real

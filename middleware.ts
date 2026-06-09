@@ -1,35 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { readSessionFromRequest } from '@/lib/auth/session';
 
-// Rutas que requieren autenticación
-const protectedRoutes = [
-  '/usuario/landing',
-  '/usuario',
-  '/bibliotecario',
-  '/tramites',
-  '/carrito',
-  '/dashboard',
-];
+// TODO: Middleware authentication disabled for Edge Function compatibility
+// Edge Functions cannot access database connections
+// Re-enable after migrating auth logic to client-side or API routes
 
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  
-  // Verificar si la ruta necesita protección
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute) {
-    const session = await readSessionFromRequest(request);
-
-    if (!session) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('from', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
   return NextResponse.next();
 }
 

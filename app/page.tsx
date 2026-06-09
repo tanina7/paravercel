@@ -1,185 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { QRCodeSVG } from 'qrcode.react';
-
-// --- Función para cargar librerías de PDF ---
-const loadScript = (src: string) => {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve(true);
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = () => resolve(true);
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-};
-
 export default function PortalPublicoPage() {
-  const router = useRouter();
-  
-  const [baseUrl, setBaseUrl] = useState('');
-  const [codigoBusqueda, setCodigoBusqueda] = useState('');
-  const [estadoBusqueda, setEstadoBusqueda] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [mensajeError, setMensajeError] = useState('');
-  
-  const [tramite, setTramite] = useState<any>(null);
-  const [firmasDB, setFirmasDB] = useState<any[]>([]);
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  useEffect(() => {
-    setBaseUrl(window.location.origin);
-  }, []);
-
-  const handleBuscar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!codigoBusqueda.trim()) return;
-
-    setEstadoBusqueda('loading');
-    setTramite(null);
-    setMensajeError('');
-
-    try {
-      const [resTramite, resFirmas] = await Promise.all([
-        fetch(`/api/verificar/${encodeURIComponent(codigoBusqueda.trim())}`),
-        fetch('/api/obtener-firmas')
-      ]);
-
-      const dataTramite = await resTramite.json();
-      const dataFirmas = await resFirmas.json();
-
-      if (dataTramite.success) {
-        setTramite(dataTramite.data);
-        if (dataFirmas.success) {
-          setFirmasDB(dataFirmas.firmas);
-        }
-        setEstadoBusqueda('success');
-      } else {
-        setMensajeError(dataTramite.message || 'No se encontró ningún trámite con ese código.');
-        setEstadoBusqueda('error');
-      }
-    } catch (error) {
-      setMensajeError('Error de conexión con el servidor. Intenta nuevamente.');
-      setEstadoBusqueda('error');
-    }
-  };
-
-  const handleDescargarPDF = async () => {
-    const elemento = document.getElementById('certificado-a4');
-    if (!elemento) return;
-    setIsDownloading(true);
-
-    try {
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js');
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-
-      const domtoimage = (window as any).domtoimage;
-      const jsPDF = (window as any).jspdf.jsPDF;
-
-      const imgData = await domtoimage.toPng(elemento, { 
-        bgcolor: '#ffffff',
-        style: { transform: 'scale(1)', transformOrigin: 'top left' }
-      });
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight); 
-      pdf.save(`Certificado_${codigoBusqueda}.pdf`);
-    } catch (error) {
-      console.error("Error generando PDF:", error);
-      alert("Hubo un error generando el PDF.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const obtenerNombreRol = (id_rol?: number) => {
-    switch (id_rol) {
-      case 5: return "Director de Carrera";
-      case 6: return "Vicerrector Académico";
-      case 7: return "Rector";
-      case 1: return "Estudiante";
-      default: return "Autoridad";
-    }
-  };
-
-  const volverAlInicio = () => {
-    setEstadoBusqueda('idle');
-    setTramite(null);
-    setCodigoBusqueda('');
-  };
-
-  let firmasUsadas = [];
-  if (tramite && firmasDB.length > 0) {
-    firmasUsadas = firmasDB.filter(f => {
-      if (!tramite.firma_digital_url) return false;
-      const guardadoStr = String(tramite.firma_digital_url);
-      return guardadoStr.includes(String(f.id_usuario)) || guardadoStr.includes(f.firma_digital_url);
-    });
-    if (firmasUsadas.length === 0) firmasUsadas = [firmasDB[0]]; 
-  }
-
-  // Comprobamos si el trámite está finalizado
-  const isFinalizado = tramite?.id_estado === 7 || tramite?.nombre_estado === 'Listo para Impresion' || tramite?.nombre_estado === 'Finalizado';
-
   return (
-    <div className="min-h-screen flex flex-col font-sans selection:bg-[#8B1A1A] selection:text-white bg-gray-50">
-      
-      {/* HEADER SIEMPRE VISIBLE */}
-      <header className="w-full bg-white border-b border-gray-200 py-4 px-6 sm:px-8 flex items-center justify-between z-20 relative shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#8B1A1A] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md">UV</div>
-          <span className="font-bold text-gray-900 text-lg hidden sm:block tracking-wide">Universidad Privada del Valle</span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-[#8B1A1A] mb-4">¡Bienvenido!</h1>
+        <p className="text-gray-600 mb-6">El sistema está funcionando correctamente en Vercel.</p>
+        <div className="space-y-4">
+          <a href="/auth/login" className="inline-block bg-[#8B1A1A] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#6b1414]">
+            Iniciar Sesión
+          </a>
+          <p className="text-sm text-gray-500">Portal de trámites UV</p>
         </div>
-        <button onClick={() => router.push('/auth/login')} className="text-sm font-bold text-gray-700 hover:text-[#8B1A1A] transition-colors flex items-center gap-2 bg-gray-100 hover:bg-red-50 px-4 py-2 rounded-lg">
-          <span>👤</span> Iniciar Sesión
-        </button>
-      </header>
-
-      {/* CONTENIDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col items-center justify-start pt-10 pb-20 relative px-4 overflow-x-hidden">
-        
-        {/* FONDO DE LA LANDING (Luces rojas y grises) */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[0%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-red-100/40 blur-3xl"></div>
-          <div className="absolute bottom-[20%] left-[-5%] w-[50vw] h-[50vw] rounded-full bg-gray-200/50 blur-3xl"></div>
-        </div>
-
-        <div className="relative z-10 w-full flex flex-col items-center">
-
-          {/* ========================================= */}
-          {/* VISTA 1: EL BUSCADOR INICIAL              */}
-          {/* ========================================= */}
-          {(estadoBusqueda !== 'success' || !tramite) && (
-            <div className="w-full max-w-2xl text-center mt-8 animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-100 text-[#8B1A1A] text-xs font-bold uppercase tracking-wider mb-8 shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Portal de Verificación Pública
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4 leading-tight">
-                Consulta el estado de tu <br className="hidden sm:block" /><span className="text-[#8B1A1A]">Trámite Universitario</span>
-              </h1>
-              <p className="text-gray-600 mb-10 max-w-lg mx-auto text-lg">
-                Ingresa tu código de seguridad para conocer el progreso o verificar la autenticidad de un documento.
-              </p>
-
-              <div className="w-full bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-100">
-                <form onSubmit={handleBuscar} className="flex flex-col gap-4">
-                  <div className="text-left">
-                    <label htmlFor="codigoTramite" className="block text-sm font-bold text-gray-700 mb-2">Código del Trámite</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span className="text-gray-400 text-xl">🔍</span></div>
-                      <input
-                        id="codigoTramite" type="text" value={codigoBusqueda} onChange={(e) => setCodigoBusqueda(e.target.value)}
-                        placeholder="Ej: UV-2026-TRM-1234" className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-[#8B1A1A] focus:ring-4 focus:ring-red-50 transition-all outline-none font-mono text-gray-800 uppercase" required
-                      />
-                    </div>
-                  </div>
-                  <button type="submit" disabled={estadoBusqueda === 'loading'} className="w-full bg-[#8B1A1A] hover:bg-[#6b1414] disabled:bg-gray-400 text-white font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-red-200 flex items-center justify-center gap-2 text-lg mt-2">
-                    {estadoBusqueda === 'loading' ? 'Buscando...' : 'Buscar Documento'} {estadoBusqueda !== 'loading' && <span>→</span>}
+      </div>
+    </div>
+  );
+}
                   </button>
                 </form>
               </div>

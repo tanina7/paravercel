@@ -19,6 +19,9 @@ function getLocalIp() {
 const miIP = getLocalIp();
 
 const nextConfig: NextConfig = {
+  // Output standalone para Docker
+  output: 'standalone',
+
   // Le pasamos la IP que detectó automáticamente
   allowedDevOrigins: [
     'localhost',
